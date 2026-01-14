@@ -248,6 +248,15 @@ secret_token
 credentials.json
 keys.json
 
+# Project specific
+storage/
+qdrant_data/
+qwen3-vl-embedding-2B/models/
+qwen3-vl-embedding-2B/*.bin
+qwen3-vl-embedding-2B/*.safetensors
+qwen3-vl-embedding-2B/*.pth
+qwen3-vl-embedding-2B/*.pt
+
 # OS generated files
 .DS_Store
 .DS_Store?
