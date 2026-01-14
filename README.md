@@ -16,27 +16,23 @@
 
 ```
 ImgEmbedding2VecDB/
-├── app/
-│   ├── main.py                 # FastAPI主应用入口
-│   ├── config.py               # 配置管理
-│   ├── models/                 # Pydantic数据模型
-│   │   └── schemas.py
-│   ├── services/               # 业务服务层
-│   │   ├── embedding_service.py    # Embedding服务
-│   │   ├── vector_db_service.py    # Qdrant向量数据库服务
-│   │   ├── storage_service.py      # 图片存储服务
-│   │   └── search_service.py       # 智能搜索服务
-│   └── routers/                # API路由
-│       ├── embedding.py        # Embedding接口
-│       ├── vector_db.py        # 向量数据库CRUD接口
-│       ├── search.py           # 搜索接口
-│       ├── storage.py          # 存储接口
-│       └── agent.py            # Agent集成接口
-├── qwen3-vl-embedding-2B/      # 多模态Embedding模型
-├── storage/                    # 图片存储目录
-├── qdrant_data/                # Qdrant本地数据
-├── requirements.txt
-└── README.md
+├── app/                      # 后端API服务
+│   ├── main.py              # FastAPI主应用入口
+│   ├── config.py            # 配置管理
+│   ├── models/              # Pydantic数据模型
+│   ├── services/            # 业务服务层
+│   └── routers/             # API路由
+├── agent/                   # Agent集成模块（可选）
+│   ├── agent_main.py        # OpenJiuwen Agent主程序
+│   ├── config.py            # Agent配置
+│   └── tools/               # Agent工具集
+│       ├── album_tools.py   # 相册管理工具
+│       └── search_tools.py  # 搜索工具
+├── qwen3-vl-embedding-2B/   # 多模态Embedding模型
+├── storage/                 # 图片存储目录
+├── qdrant_data/             # Qdrant本地数据
+├── start_agent.sh           # Agent一键启动脚本
+└── requirements.txt
 ```
 
 ## 快速开始
@@ -116,24 +112,28 @@ INFO - 所有服务初始化完成!
 
 ### Embedding服务 (`/api/v1/embedding`)
 
-| 接口         | 方法 | 说明                    |
-| ------------ | ---- | ----------------------- |
-| `/generate`  | POST | 生成多模态Embedding向量 |
-| `/text`      | POST | 快捷：纯文本Embedding   |
-| `/image`     | POST | 快捷：图片Embedding     |
-| `/dimension` | GET  | 获取向量维度            |
+| 接口         | 方法 | 说明                                   |
+| ------------ | ---- | -------------------------------------- |
+| `/generate`  | POST | 生成多模态Embedding向量                |
+| `/text`      | POST | 快捷：纯文本Embedding                  |
+| `/image`     | POST | 快捷：图片Embedding（支持URL自动存储） |
+| `/dimension` | GET  | 获取向量维度                           |
 
-**示例请求:**
-```json
-POST /api/v1/embedding/generate
-{
-  "inputs": [
-    {"text": "一只可爱的猫咪"},
-    {"image_id": "img_abc123"},
-    {"text": "描述这张图片", "image_id": "img_abc123"}
-  ],
-  "normalize": true
-}
+**`/image` 参数说明：**
+```python
+image_url: str           # 图片URL
+auto_store: bool = False # 是否下载并存储图片
+auto_index: bool = False # 是否自动索引到向量库（需auto_store=True）
+tags: str = None         # 标签，逗号分隔
+```
+
+**使用场景：**
+```bash
+# 场景1：仅生成Embedding（不存储）
+curl "http://localhost:8000/api/v1/embedding/image?image_url=https://example.com/img.png"
+
+# 场景2：下载+存储+索引（一步到位）
+curl "http://localhost:8000/api/v1/embedding/image?image_url=https://example.com/img.png&auto_store=true&auto_index=true&tags=风景"
 ```
 
 ### 向量数据库 (`/api/v1/vectors`)
@@ -252,18 +252,28 @@ with open("photo.jpg", "rb") as f:
     image_id = response.json()["data"]["id"]
 
 # 2. 文本搜索
-response = requests.get(
+results = requests.get(
     f"{BASE_URL}/search/text",
     params={"query": "蓝天白云", "top_k": 5}
-)
-results = response.json()["data"]
+).json()["data"]
 
 # 3. 以图搜图
-response = requests.get(
+similar = requests.get(
     f"{BASE_URL}/search/image/{image_id}",
     params={"top_k": 10}
-)
-similar_images = response.json()["data"]
+).json()["data"]
+
+# 4. 从URL下载并索引图片（新增）
+result = requests.post(
+    f"{BASE_URL}/embedding/image",
+    params={
+        "image_url": "https://example.com/photo.jpg",
+        "auto_store": True,
+        "auto_index": True,
+        "tags": "风景"
+    }
+).json()
+stored_id = result.get("stored_image_id")
 ```
 
 ### cURL示例
@@ -284,29 +294,57 @@ curl "http://localhost:8000/status"
 
 ## Agent集成指南
 
-本系统预留了AI Agent框架集成接口，支持openjiuwen等框架调用：
+系统提供两种 Agent 集成方式：
+
+### 方式1：HTTP API调用（推荐）
 
 ```python
-# Agent调用示例
-response = requests.post(
-    f"{BASE_URL}/agent/execute",
-    json={
-        "action": "search",
-        "parameters": {
-            "query_text": "找一张有猫的照片",
-            "top_k": 5
-        },
-        "context": {"user_id": "user_001"}
-    }
-)
+import requests
+
+BASE_URL = "http://localhost:8000/api/v1"
+
+# 搜索图片
+results = requests.get(
+    f"{BASE_URL}/search/text",
+    params={"query": "进一张有猫的照片", "top_k": 5}
+).json()["data"]
+
+# 上传图片
+with open("cat.jpg", "rb") as f:
+    result = requests.post(
+        f"{BASE_URL}/storage/upload",
+        files={"file": f},
+        data={"auto_index": True, "tags": "动物,猫"}
+    ).json()["data"]
 ```
 
-可用动作：
-- `search`: 搜索图片
-- `upload`: 上传图片（预留）
-- `delete`: 删除图片
-- `update`: 更新图片信息
-- `analyze`: 分析图片内容（预留）
+### 方式2：OpenJiuwen 框架集成
+
+项目已内置 Agent 工具集，支持 OpenJiuwen 等框架：
+
+```bash
+# 一键启动（后端 + Agent）
+./start_agent.sh
+
+# 或分步启动
+# 终端1：后端服务
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+# 终端2：Agent
+cd agent && python agent_main.py
+```
+
+**可用工具：**
+- `album_tools.py`: 上传、删除、查看图片
+- `search_tools.py`: 文本搜索、以图搜图、混合搜索
+
+**配置示例：**
+```python
+# agent/config.py
+ALBUM_API_BASE_URL = "http://localhost:8000/api/v1"
+LLM_MODEL = "qwen-plus"
+LLM_API_KEY = "your-api-key"  # 华为云API密钥
+```
 
 ## 系统要求
 
