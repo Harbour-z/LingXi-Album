@@ -50,18 +50,33 @@ def _background_index_image(
     """
     后台异步索引图片
     在后台线程中生成Embedding并存入向量数据库
+    
+    注意：索引失败不会影响图片存储，但会导致该图片无法被搜索到
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     try:
-        search_svc.index_image(
+        logger.info(f"开始异步索引图片: {image_id}")
+        
+        success = search_svc.index_image(
             image_id=image_id,
             image_path=image_path,
             metadata=metadata
         )
+        
+        if success:
+            logger.info(f"✅ 异步索引成功: {image_id}")
+        else:
+            logger.error(f"❌ 异步索引失败: {image_id} - index_image返回False")
+            
     except Exception as e:
-        # 记录错误但不影响上传流程
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"后台索引图片失败 {image_id}: {e}")
+        # 关键改进：记录详细的错误信息
+        logger.error(f"❌ 异步索引异常: {image_id}", exc_info=True)
+        logger.error(f"   错误详情: {str(e)}")
+        logger.error(f"   图片路径: {image_path}")
+        logger.error(f"   元数据: {metadata}")
+        # 注意：异步索引失败不影响图片存储，图片文件已成功保存
 
 
 @router.post(
@@ -122,16 +137,36 @@ async def upload_image(
                 search_svc=search_svc
             )
             image_info["indexed"] = "processing"  # 索引处理中
+            image_info["index_mode"] = "async"  # 新增：标识异步模式
         else:
-            # 同步索引
-            search_svc.index_image(
-                image_id=image_info["id"],
-                image_path=image_info["full_path"],
-                metadata=metadata.model_dump()
-            )
-            image_info["indexed"] = True
+            # 同步索引 - 增强错误处理
+            try:
+                success = search_svc.index_image(
+                    image_id=image_info["id"],
+                    image_path=image_info["full_path"],
+                    metadata=metadata.model_dump()
+                )
+                image_info["indexed"] = success  # 根据实际结果设置
+                image_info["index_mode"] = "sync"
+                
+                if not success:
+                    # 索引失败但不影响图片存储
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.warning(f"同步索引失败但图片已保存: {image_info['id']}")
+                    
+            except Exception as e:
+                # 捕获索引异常，但不影响图片存储流程
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"同步索引异常: {image_info['id']}", exc_info=True)
+                
+                image_info["indexed"] = False
+                image_info["index_mode"] = "sync"
+                image_info["index_error"] = str(e)
     else:
         image_info["indexed"] = False
+        image_info["index_mode"] = "none"
 
     return ImageUploadResponse(
         status=ResponseStatus.SUCCESS,

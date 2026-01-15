@@ -108,16 +108,19 @@ class StorageService:
     def save_image(
         self,
         file_content: bytes,
-        filename: str,
-        image_id: Optional[str] = None
+        filename: str
     ) -> Dict[str, Any]:
         """
         保存图片文件
 
+        安全性设计：
+        - UUID由系统自动生成，禁止外部指定
+        - 文件重命名为 UUID.扩展名 格式
+        - 确保标识唯一性和存储安全性
+
         Args:
             file_content: 文件二进制内容
-            filename: 原始文件名
-            image_id: 指定的图片ID（可选）
+            filename: 原始文件名（仅用于提取扩展名）
 
         Returns:
             图片信息字典
@@ -134,32 +137,34 @@ class StorageService:
             raise ValueError(
                 f"文件大小超过限制: {len(file_content)} > {self._max_file_size}")
 
-        # 生成ID和路径
-        image_id = image_id or self._generate_id()
+        # 系统生成UUID（安全性设计：禁止外部指定）
+        image_id = self._generate_id()
         extension = self._get_extension(filename)
+
+        # 文件重命名为: UUID.扩展名
         file_path = self._get_image_path(image_id, extension)
 
         # 保存文件
         with open(file_path, "wb") as f:
             f.write(file_content)
 
-        # 获取图片信息
+        # 获取图片信息（保留原始文件名用于展示）
         image_info = self._get_image_info(file_path, image_id, filename)
 
-        logger.info(f"图片保存成功: {image_id} -> {file_path}")
+        logger.info(f"图片保存成功: {image_id} (原名: {filename}) -> {file_path}")
         return image_info
 
     def save_image_from_path(
         self,
-        source_path: str,
-        image_id: Optional[str] = None
+        source_path: str
     ) -> Dict[str, Any]:
         """
         从本地路径保存图片
 
+        安全性设计：UUID由系统自动生成
+
         Args:
             source_path: 源文件路径
-            image_id: 指定的图片ID（可选）
 
         Returns:
             图片信息字典
@@ -171,7 +176,8 @@ class StorageService:
         with open(source, "rb") as f:
             content = f.read()
 
-        return self.save_image(content, source.name, image_id)
+        # 移除 image_id 参数，强制使用系统生成的UUID
+        return self.save_image(content, source.name)
 
     def _get_image_info(
         self,

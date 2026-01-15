@@ -104,11 +104,19 @@ class SearchService:
         if not self.is_initialized:
             raise RuntimeError("搜索服务未初始化")
 
-        # 生成查询向量
+        logger.info(
+            f"开始文本搜索: query='{query_text}', top_k={top_k}, score_threshold={score_threshold}, tags={filter_tags}")
+
+        # 关键修复：使用与索引时相同的 instruction
+        # 索引时用的是: "Represent this image for retrieval."
+        # 搜索时也应该使用相同的语义空间
         query_vector = self._embedding_service.generate_text_embedding(
             text=query_text,
-            instruction=instruction or "Find images that match this description."
+            instruction=instruction or "Represent this text for retrieval."
         )
+
+        logger.info(
+            f"查询向量生成完成: dimension={len(query_vector)}, first_3_values={query_vector[:3]}")
 
         # 向量搜索
         results = self._vector_db_service.search(
@@ -117,6 +125,11 @@ class SearchService:
             score_threshold=score_threshold,
             filter_tags=filter_tags
         )
+
+        logger.info(f"向量搜索完成: 返回 {len(results)} 条结果")
+        if len(results) > 0:
+            logger.info(
+                f"第1条结果: id={results[0]['id']}, score={results[0]['score']}")
 
         # 添加预览URL
         for result in results:
@@ -341,18 +354,30 @@ class SearchService:
         if not self.is_initialized:
             raise RuntimeError("搜索服务未初始化")
 
+        logger.info(f"开始索引图片: id={image_id}, path={image_path}")
+
         # 生成图片向量
         vector = self._embedding_service.generate_image_embedding(
             image=image_path,
             instruction=instruction or "Represent this image for retrieval."
         )
 
+        logger.info(
+            f"图片向量生成完成: dimension={len(vector)}, first_3_values={vector[:3]}")
+
         # 存入向量数据库
-        return self._vector_db_service.upsert(
+        success = self._vector_db_service.upsert(
             id=image_id,
             vector=vector,
             metadata=metadata
         )
+
+        if success:
+            logger.info(f"图片索引成功: {image_id}")
+        else:
+            logger.error(f"图片索引失败: {image_id}")
+
+        return success
 
     def index_images_batch(
         self,
