@@ -50,26 +50,26 @@ def _background_index_image(
     """
     后台异步索引图片
     在后台线程中生成Embedding并存入向量数据库
-    
+
     注意：索引失败不会影响图片存储，但会导致该图片无法被搜索到
     """
     import logging
     logger = logging.getLogger(__name__)
-    
+
     try:
         logger.info(f"开始异步索引图片: {image_id}")
-        
+
         success = search_svc.index_image(
             image_id=image_id,
             image_path=image_path,
             metadata=metadata
         )
-        
+
         if success:
             logger.info(f"✅ 异步索引成功: {image_id}")
         else:
             logger.error(f"❌ 异步索引失败: {image_id} - index_image返回False")
-            
+
     except Exception as e:
         # 关键改进：记录详细的错误信息
         logger.error(f"❌ 异步索引异常: {image_id}", exc_info=True)
@@ -148,19 +148,19 @@ async def upload_image(
                 )
                 image_info["indexed"] = success  # 根据实际结果设置
                 image_info["index_mode"] = "sync"
-                
+
                 if not success:
                     # 索引失败但不影响图片存储
                     import logging
                     logger = logging.getLogger(__name__)
                     logger.warning(f"同步索引失败但图片已保存: {image_info['id']}")
-                    
+
             except Exception as e:
                 # 捕获索引异常，但不影响图片存储流程
                 import logging
                 logger = logging.getLogger(__name__)
                 logger.error(f"同步索引异常: {image_info['id']}", exc_info=True)
-                
+
                 image_info["indexed"] = False
                 image_info["index_mode"] = "sync"
                 image_info["index_error"] = str(e)

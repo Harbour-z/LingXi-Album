@@ -79,8 +79,8 @@ class StorageService:
         return self._storage_path
 
     def _generate_id(self) -> str:
-        """生成唯一ID"""
-        return f"img_{uuid.uuid4().hex[:12]}"
+        """生成标准UUID"""
+        return str(uuid.uuid4())
 
     def _get_extension(self, filename: str) -> str:
         """获取文件扩展名"""
@@ -327,7 +327,8 @@ class StorageService:
             for path in self._storage_path.rglob(f"*.{ext}"):
                 # 提取ID
                 image_id = path.stem
-                if image_id.startswith("img_"):
+                # 兼容旧格式(img_前缀)和新格式(标准UUID)
+                if image_id.startswith("img_") or self._is_valid_uuid(image_id):
                     info = self._get_image_info(path, image_id, path.name)
                     all_images.append(info)
 
@@ -361,6 +362,14 @@ class StorageService:
             "total_size_mb": round(total_size / (1024 * 1024), 2),
             "storage_path": str(self._storage_path)
         }
+
+    def _is_valid_uuid(self, value: str) -> bool:
+        """验证是否为有效UUID"""
+        try:
+            uuid.UUID(value)
+            return True
+        except (ValueError, AttributeError):
+            return False
 
     def image_exists(self, image_id: str) -> bool:
         """检查图片是否存在"""
