@@ -373,6 +373,9 @@ class VectorDBService:
         """
         向量相似度搜索
 
+        使用 qdrant-client >= 1.7.0 推荐的 query_points() 方法
+        替代已废弃的 search() 方法
+
         Args:
             query_vector: 查询向量
             top_k: 返回结果数量
@@ -385,6 +388,10 @@ class VectorDBService:
         """
         if not self.is_initialized:
             raise RuntimeError("向量数据库未初始化")
+
+        # 诊断检查：确保客户端对象正确初始化
+        if self._client is None:
+            raise RuntimeError("Qdrant 客户端未正确初始化，_client 为 None")
 
         # 构建过滤条件
         query_filter = None
@@ -410,14 +417,26 @@ class VectorDBService:
         if conditions:
             query_filter = Filter(must=conditions)
 
-        results = self._client.search(
-            collection_name=self._collection_name,
-            query_vector=query_vector,
-            limit=top_k,
-            score_threshold=score_threshold,
-            query_filter=query_filter,
-            with_payload=True
-        )
+        # 使用新版 API: query_points() 替代已废弃的 search()
+        # 关键变化:
+        #   1. 参数名: query_vector -> query
+        #   2. 返回值: List[ScoredPoint] -> QueryResponse (需要 .points 获取列表)
+        try:
+            response = self._client.query_points(
+                collection_name=self._collection_name,
+                query=query_vector,  # 新版 API 使用 query 而非 query_vector
+                limit=top_k,
+                score_threshold=score_threshold,
+                query_filter=query_filter,
+                with_payload=True
+            )
+            # query_points 返回 QueryResponse 对象，通过 .points 获取结果列表
+            results = response.points
+        except Exception as e:
+            logger.error(f"Qdrant query_points 查询失败: {e}")
+            logger.error(f"参数: collection={self._collection_name}, limit={top_k}, "
+                         f"score_threshold={score_threshold}, filter={query_filter}")
+            raise
 
         return [
             {
