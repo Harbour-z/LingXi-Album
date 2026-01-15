@@ -3,19 +3,20 @@ Embedding服务模块
 封装Qwen3-VL多模态Embedding模型的调用
 """
 
-from qwen3_vl_embedding import Qwen3VLEmbedder
 import sys
 import logging
 from pathlib import Path
-from typing import Optional, List, Dict, Any, Union
+from typing import Optional, List, Dict, Any, Union, TYPE_CHECKING
 from PIL import Image
 
-# 添加模型脚本路径到sys.path
+# 先添加模型脚本路径到sys.path（必须在最前面）
 SCRIPTS_PATH = Path(__file__).parent.parent.parent / \
     "qwen3-vl-embedding-2B" / "scripts"
 sys.path.insert(0, str(SCRIPTS_PATH))
 
-# 在添加路径后再导入模型
+# 延迟导入：只在类型检查时导入，运行时不导入
+if TYPE_CHECKING:
+    from qwen3_vl_embedding import Qwen3VLEmbedder
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ class EmbeddingService:
     """
 
     _instance: Optional["EmbeddingService"] = None
-    _embedder: Optional[Qwen3VLEmbedder] = None
+    _embedder: Optional[Any] = None  # 使用Any避免类型错误
 
     def __new__(cls):
         """单例模式确保只有一个模型实例"""
@@ -63,6 +64,9 @@ class EmbeddingService:
             return
 
         logger.info(f"正在初始化Embedding模型: {model_path}")
+
+        # 在这里动态导入模块（sys.path已在模块顶部设置好）
+        from qwen3_vl_embedding import Qwen3VLEmbedder
 
         self._embedder = Qwen3VLEmbedder(
             model_name_or_path=model_path,
