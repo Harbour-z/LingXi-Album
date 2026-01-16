@@ -1,73 +1,66 @@
-# React + TypeScript + Vite
+# Smart Album Frontend (Refactored)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Based on Ant Design + React + TypeScript + Vite.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### 1. Modern UI/UX
+- **Design System**: Built with Ant Design 5.0, featuring a clean, enterprise-grade interface.
+- **Responsive Layout**: Sidebar navigation (`MainLayout`) adapting to different screen sizes.
+- **Theming**: Consistent color palette and typography.
 
-## React Compiler
+### 2. Intelligent Chat (`/chat`)
+- **Interface**: Chat-like interface similar to modern AI assistants.
+- **Features**:
+  - Message bubbles for User and Agent.
+  - Image result visualization with preview.
+  - Suggestion chips for quick actions.
+  - Auto-scroll and loading states.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 3. Smart Gallery (`/gallery`)
+- **Views**: Toggle between Grid and List views.
+- **Performance**: Pagination and optimized image rendering.
+- **Search**: Real-time filtering and semantic search integration.
+- **Preview**: Integrated Lightbox for full-screen image viewing.
 
-## Expanding the ESLint configuration
+### 4. Upload Center (`/upload`)
+- **Methods**: 
+  - Drag & Drop for local files.
+  - URL import for network images.
+- **Management**:
+  - Upload progress tracking.
+  - Batch tagging and description.
+  - Recent upload history with delete capability.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Project Structure
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+frontend/src/
+├── api/            # API clients (Axios + Interceptors)
+├── components/     
+│   └── layout/     # Global Layouts (MainLayout)
+├── pages/          # Page Components
+│   ├── HomePage.tsx
+│   ├── ChatPage.tsx
+│   ├── GalleryPage.tsx
+│   └── UploadPage.tsx
+├── store/          # State Management (Zustand)
+└── main.tsx        # Entry point with ConfigProvider
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Setup
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+2. Start development server:
+   ```bash
+   npm run dev
+   ```
+
+3. Build for production:
+   ```bash
+   npm run build
+   ```

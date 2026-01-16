@@ -6,14 +6,16 @@ interface EmptyStateProps {
 }
 
 export function EmptyState({
-    title = '暂无结果',
-    description = '尝试使用其他关键词搜索'
+    title = '暂无内容',
+    description = '这里还没有任何内容'
 }: EmptyStateProps) {
     return (
-        <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-            <ImageOff size={48} className="mb-4 opacity-50" />
-            <h3 className="text-lg font-medium">{title}</h3>
-            <p className="text-sm mt-1">{description}</p>
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-background-secondary flex items-center justify-center mb-4">
+                <ImageOff className="text-foreground-subtle" size={28} />
+            </div>
+            <p className="text-foreground font-medium mb-1">{title}</p>
+            <p className="text-sm text-foreground-muted">{description}</p>
         </div>
     );
 }

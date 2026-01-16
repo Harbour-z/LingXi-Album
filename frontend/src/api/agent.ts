@@ -1,8 +1,8 @@
 import client from './client';
 import type { ChatRequest, ChatResponse } from './types';
 
-export async function sendChatMessage(params: ChatRequest): Promise<ChatResponse> {
-    const { data } = await client.post('/agent/chat', params);
+export async function sendChatMessage(params: ChatRequest, options?: { signal?: AbortSignal }): Promise<ChatResponse> {
+    const { data } = await client.post('/agent/chat', params, { signal: options?.signal });
     return data;
 }
 

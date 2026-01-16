@@ -30,12 +30,18 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
         set({ messages: [...messages, userMessage], isLoading: true, error: null });
 
+        // Setup AbortController for timeout (45 seconds)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 45000);
+
         try {
             const response = await sendChatMessage({
                 query,
                 session_id: sessionId || undefined,
                 top_k: topK,
-            });
+            }, { signal: controller.signal });
+
+            clearTimeout(timeoutId);
 
             if (response.session_id && response.session_id !== sessionId) {
                 localStorage.setItem('chat_session_id', response.session_id);
@@ -60,11 +66,29 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                 messages: [...state.messages, agentMessage],
                 isLoading: false,
             }));
-        } catch (error) {
-            set({
+        } catch (error: any) {
+            clearTimeout(timeoutId);
+            
+            let errorMessage = error instanceof Error ? error.message : '发送失败';
+            
+            // Handle Timeout / Abort
+            if (error.name === 'CanceledError' || error.name === 'AbortError' || error.code === 'ERR_CANCELED') {
+                errorMessage = '请求超时，服务器没有响应，请稍后重试。';
+            }
+
+            // Create an error message bubble
+            const errorMessageObj: ChatMessage = {
+                id: crypto.randomUUID(),
+                type: 'agent',
+                content: `❌ ${errorMessage}`,
+                timestamp: new Date(),
+            };
+
+            set(state => ({
                 isLoading: false,
-                error: error instanceof Error ? error.message : '发送失败'
-            });
+                error: errorMessage,
+                messages: [...state.messages, errorMessageObj]
+            }));
         }
     },
 

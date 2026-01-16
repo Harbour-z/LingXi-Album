@@ -186,13 +186,22 @@ class StorageService:
         original_filename: str
     ) -> Dict[str, Any]:
         """获取图片详细信息"""
-        stat = file_path.stat()
+        try:
+            stat = file_path.stat()
+        except FileNotFoundError:
+            # 文件可能已被删除
+            return None
 
         # 获取图片尺寸
         width, height, img_format = 0, 0, ""
-        with Image.open(file_path) as img:
-            width, height = img.size
-            img_format = img.format or ""
+        try:
+            with Image.open(file_path) as img:
+                width, height = img.size
+                img_format = img.format or ""
+        except Exception as e:
+            logger.warning(f"无法读取图片信息: {file_path}, 错误: {e}")
+            # 图片可能损坏，但我们仍然返回基本文件信息，以便用户可以看到并删除它
+            img_format = "unknown"
 
         # 计算相对路径
         relative_path = str(file_path.relative_to(self._storage_path))
