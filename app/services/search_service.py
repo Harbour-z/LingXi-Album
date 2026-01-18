@@ -128,8 +128,8 @@ class SearchService:
 
         logger.info(f"向量搜索完成: 返回 {len(results)} 条结果")
         if len(results) > 0:
-            logger.info(
-                f"第1条结果: id={results[0]['id']}, score={results[0]['score']}")
+            for i, result in enumerate(results):
+                logger.info(f"第{i+1}条结果: id={result['id']}, score={result['score']}")
 
         # 添加预览URL
         for result in results:

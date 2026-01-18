@@ -274,7 +274,7 @@ export const HomePage: React.FC = () => {
                         shape="round" 
                         size="large"
                         onClick={() => {
-                            navigate(`/gallery?q=${encodeURIComponent(item.text)}`);
+                            navigate(`/gallery?q=${encodeURIComponent(item.text)}&top_k=${topK}`);
                         }}
                         style={{ height: 'auto', padding: '8px 20px', minWidth: 'auto' }}
                     >

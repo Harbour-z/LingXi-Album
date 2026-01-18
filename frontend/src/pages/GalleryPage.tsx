@@ -31,14 +31,17 @@ const { Text } = Typography;
 
 export const GalleryPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const initialQuery = searchParams.get('q') || '';
+  const initialTopK = parseInt(searchParams.get('top_k') || '10', 10);
   const [images, setImages] = useState<ImageResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [pageSize, setPageSize] = useState(24);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
+  const [isSearching, setIsSearching] = useState(!!initialQuery);
+  const [topK, setTopK] = useState(initialTopK);
 
   const fetchImages = useCallback(async (pageNum: number, size: number) => {
     console.log('Fetching images...', { pageNum, size });
@@ -76,7 +79,7 @@ export const GalleryPage: React.FC = () => {
     }
   }, []);
 
-  const handleSearch = useCallback(async (value: string) => {
+  const handleSearch = useCallback(async (value: string, eventOrTopK?: any) => {
     if (!value.trim()) {
       setSearchQuery('');
       setIsSearching(false);
@@ -89,12 +92,12 @@ export const GalleryPage: React.FC = () => {
     setIsSearching(true);
     setSearchQuery(value);
     
-    // Get top_k from URL or default to 50
-    const topKParam = searchParams.get('top_k');
-    const topK = topKParam ? parseInt(topKParam, 10) : 50;
+    // Determine Top K: use passed number if available, otherwise use state
+    // Ant Design Search component passes an event object as the second argument
+    const k = typeof eventOrTopK === 'number' ? eventOrTopK : topK;
 
     try {
-      const result = await searchByText(value.trim(), topK);
+      const result = await searchByText(value.trim(), k);
       setImages(result.data);
       setTotal(result.total);
       setPage(1);
@@ -103,36 +106,55 @@ export const GalleryPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [searchParams]); // Depend on searchParams for top_k
+  }, [topK]); 
 
   // Effect 1: Sync URL params with component state
   useEffect(() => {
     const queryParam = searchParams.get('q');
+    const topKParam = searchParams.get('top_k');
     
+    // Case 1: URL has a query
     if (queryParam) {
-      // If URL has query but state doesn't match, trigger search
-      if (queryParam !== searchQuery) {
-        handleSearch(queryParam);
+      const newTopK = topKParam ? parseInt(topKParam, 10) : 10;
+      
+      // Update topK state if URL has it
+      if (newTopK !== topK) {
+          setTopK(newTopK);
+      }
+
+      // If the current state matches the URL, we might have just mounted with initial state.
+      // But we still need to fetch data because initial state setting doesn't trigger fetch.
+      // Or if the URL changed (e.g. back button), we need to update state and fetch.
+      
+      if (queryParam !== searchQuery || newTopK !== topK) {
+         // URL changed, update state and search
+         setSearchQuery(queryParam);
+         setTopK(newTopK);
+         handleSearch(queryParam, newTopK);
+      } else if (images.length === 0 && loading) {
+         // Initial mount case or refresh: state matches URL, but no data yet.
+         // Trigger search directly.
+         handleSearch(queryParam, newTopK);
       }
     } else {
-      // If URL has no query but we are in search mode, reset to view all
+      // Case 2: URL has NO query
+      // If we were searching, we need to reset.
       if (isSearching) {
         setIsSearching(false);
         setSearchQuery('');
         setPage(1);
-        // fetchImages will be triggered by the second useEffect when isSearching becomes false
+        // Effect 2 will handle fetching default images when isSearching becomes false
       }
     }
-  }, [searchParams, handleSearch]); // Added handleSearch dependency
+  }, [searchParams]); // Depend ONLY on searchParams to avoid loops
 
   // Effect 2: Handle data fetching for non-search mode (View All)
   useEffect(() => {
     // Only fetch default images if we are NOT searching
-    // When searching, handleSearch takes care of fetching
     if (!isSearching) {
       fetchImages(page, pageSize);
     }
-  }, [page, pageSize, isSearching, fetchImages]); // Depend on pagination and mode
+  }, [page, pageSize, isSearching]); // Removed fetchImages from deps to be safe, though useCallback handles it
 
   return (
     <div style={{ maxWidth: 1400, margin: '0 auto' }}>

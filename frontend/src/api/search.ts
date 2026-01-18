@@ -21,7 +21,7 @@ export interface SearchResponse {
 
 export async function searchImages(params: SearchParams): Promise<SearchResponse> {
     const response = await client.post('/search/', params);
-    return response;
+    return response as unknown as SearchResponse;
 }
 
 export async function searchByText(
@@ -38,7 +38,7 @@ export async function searchByText(
             tags
         }
     });
-    return response;
+    return response as unknown as SearchResponse;
 }
 
 export async function searchByImageId(
@@ -52,5 +52,5 @@ export async function searchByImageId(
             score_threshold: scoreThreshold
         }
     });
-    return response;
+    return response as unknown as SearchResponse;
 }
