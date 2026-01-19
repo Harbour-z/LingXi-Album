@@ -264,3 +264,6 @@ qwen3-vl-embedding-2B/*.pt
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+!package.json
+!package-lock.json
