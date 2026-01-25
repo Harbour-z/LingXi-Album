@@ -21,7 +21,6 @@ class TestAgentService(unittest.IsolatedAsyncioTestCase):
         # Setup mock settings
         mock_settings = MagicMock()
         mock_settings.AGENT_ENABLED = False
-        mock_settings.OPENAI_API_KEY = None
         mock_get_settings.return_value = mock_settings
 
         self.service.initialize()
@@ -39,8 +38,6 @@ class TestAgentService(unittest.IsolatedAsyncioTestCase):
         mock_settings.OPENAI_MODEL_NAME = "gpt-4o"
         mock_settings.OPENAI_BASE_URL = "https://api.openai.com/v1"
         mock_settings.AGENT_PROVIDER = "openai"
-        mock_settings.LLM_SSL_VERIFY = False
-        mock_settings.LLM_SSL_CERT = None
         mock_settings.DEBUG = True
         mock_get_settings.return_value = mock_settings
         
@@ -80,7 +77,7 @@ class TestAgentService(unittest.IsolatedAsyncioTestCase):
         # 但在fallback模式下，我们希望看到它是如何响应的。
         # 由于我们把默认意图改为了chat，所以这里期望得到chat的回复
         response = await self.service.chat("找猫")
-        self.assertIn("智慧相册助手", response.get("answer", ""))
+        self.assertIn("智慧相册助手", response) 
 
     @patch('app.services.agent_service.get_settings')
     async def test_chat_with_agent(self, mock_get_settings):
@@ -95,7 +92,7 @@ class TestAgentService(unittest.IsolatedAsyncioTestCase):
         self.service._agent.invoke.side_effect = mock_invoke
         
         response = await self.service.chat("Hello")
-        self.assertEqual(response.get("answer"), "Agent Response")
+        self.assertEqual(response, "Agent Response")
         # Verify invoke called with correct inputs
         self.service._agent.invoke.assert_called()
         call_args = self.service._agent.invoke.call_args[0][0]

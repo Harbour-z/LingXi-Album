@@ -24,7 +24,7 @@ const MainLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const { isDarkMode, toggleTheme } = useThemeStore();
   const {
-    token: { colorBgContainer, borderRadiusLG },
+    token: { borderRadiusLG },
   } = theme.useToken();
   const navigate = useNavigate();
   const location = useLocation();

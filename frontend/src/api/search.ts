@@ -54,3 +54,27 @@ export async function searchByImageId(
     });
     return response as unknown as SearchResponse;
 }
+
+export async function searchByUploadedImage(
+    file: File,
+    topK: number = 10,
+    scoreThreshold?: number,
+    tags?: string[]
+): Promise<SearchResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('top_k', topK.toString());
+    if (scoreThreshold) {
+        formData.append('score_threshold', scoreThreshold.toString());
+    }
+    if (tags && tags.length > 0) {
+        tags.forEach(tag => formData.append('tags', tag));
+    }
+
+    const response = await client.post('/search/image', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    return response as unknown as SearchResponse;
+}

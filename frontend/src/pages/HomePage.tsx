@@ -8,7 +8,7 @@ import {
   Row,
   Col,
   Space,
-  Tag,
+  Flex,
   theme,
   Slider,
   Tooltip,
@@ -17,40 +17,24 @@ import {
   SearchOutlined,
   PictureOutlined,
   BulbOutlined,
-  RocketOutlined,
-  CameraOutlined,
-  ReloadOutlined,
 } from '@ant-design/icons';
 import { TypewriterEffect } from '../components/common/TypewriterEffect';
-import { useChatStore } from '../store/chatStore';
 import { useThemeStore } from '../store/themeStore';
+import { ImageSearchModal } from '../components/search/ImageSearchModal';
 
 const { Title, Paragraph, Text } = Typography;
 const { TextArea } = Input;
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
-  const { sendMessage } = useChatStore();
   const { isDarkMode } = useThemeStore();
   const [query, setQuery] = useState('');
   const [topK, setTopK] = useState(10);
   const { token } = theme.useToken();
   const [currentSuggestions, setCurrentSuggestions] = useState<{ icon: string; text: string }[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [topic, setTopic] = useState('');
   const [titleParts, setTitleParts] = useState<{ text: string; style?: React.CSSProperties }[]>([]);
-
-  // 预设话题列表
-  const topics = [
-    '帮我找最新的AI论文',
-    '搜索本周科技新闻',
-    '寻找雨天的咖啡馆照片',
-    '需要一张开心的柯基犬图片',
-    '找一下去年夏天的海边合影',
-    '搜索红色跑车在赛道上飞驰',
-    '帮我找几张极简风格的办公桌图片',
-    '寻找秋天落叶铺满街道的场景'
-  ];
+  const [isImageSearchOpen, setIsImageSearchOpen] = useState(false);
 
   // 首页标题变体列表
   const titleVariations = [
@@ -110,9 +94,6 @@ export const HomePage: React.FC = () => {
 
   // 每次页面加载时随机选择一个话题和标题，并刷新建议
   React.useEffect(() => {
-    const randomTopic = topics[Math.floor(Math.random() * topics.length)];
-    setTopic(randomTopic);
-    
     const randomTitle = titleVariations[Math.floor(Math.random() * titleVariations.length)];
     setTitleParts(randomTitle);
 
@@ -132,15 +113,6 @@ export const HomePage: React.FC = () => {
     }
   };
 
-  const suggestions = [
-    { icon: '🌅', text: '日落时的海滩' },
-    { icon: '🐕', text: '可爱的小狗' },
-    { icon: '🏔️', text: '山间风景' },
-    { icon: '🎂', text: '生日聚会' },
-    { icon: '🌸', text: '春天的花朵' },
-    { icon: '🌃', text: '城市夜景' },
-  ];
-
   const features = [
     { icon: <SearchOutlined style={{ fontSize: 24, color: token.colorPrimary }} />, title: '语义搜索', desc: '用自然语言描述，智能理解您的意图' },
     { icon: <PictureOutlined style={{ fontSize: 24, color: token.colorSuccess }} />, title: '以图搜图', desc: '上传图片，找到相似的照片' },
@@ -157,7 +129,7 @@ export const HomePage: React.FC = () => {
         padding: '20px'
     }}>
       <div style={{ maxWidth: 800, width: '100%', textAlign: 'center' }}>
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <Flex vertical gap="large" style={{ width: '100%' }}>
           
           <div style={{ marginBottom: 40 }}>
             <Title level={1} style={{ fontSize: '3rem', marginBottom: 16 }}>
@@ -177,7 +149,7 @@ export const HomePage: React.FC = () => {
           </div>
 
           <Card 
-            bordered={false}
+            variant="borderless"
             style={{ 
                 boxShadow: '0 8px 32px rgba(0,0,0,0.08)', 
                 borderRadius: 16,
@@ -187,7 +159,7 @@ export const HomePage: React.FC = () => {
                 backgroundColor: isDarkMode ? 'rgba(30, 30, 30, 0.45)' : 'rgba(255, 255, 255, 0.45)',
                 border: `1px solid ${token.colorBorderSecondary}`,
             }}
-            bodyStyle={{ padding: 0 }}
+            styles={{ body: { padding: 0 } }}
           >
             <div style={{ padding: '24px 24px 12px' }}>
                 <TextArea
@@ -240,7 +212,13 @@ export const HomePage: React.FC = () => {
                 borderTop: '1px solid #f0f0f0'
             }}>
                 <Space>
-                    <Button type="text" icon={<PictureOutlined />} disabled>以图搜图 (开发中)</Button>
+                    <Button 
+                        type="text" 
+                        icon={<PictureOutlined />} 
+                        onClick={() => setIsImageSearchOpen(true)}
+                    >
+                        以图搜图
+                    </Button>
                 </Space>
                 <Button 
                     type="primary" 
@@ -258,9 +236,9 @@ export const HomePage: React.FC = () => {
 
           <div style={{ marginTop: 32 }}>
             <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>试试这些搜索</Text>
-            <Space 
+            <Flex 
                 wrap 
-                size={[12, 12]} 
+                gap="small" 
                 style={{ 
                     justifyContent: 'center',
                     opacity: isAnimating ? 0 : 1,
@@ -282,11 +260,11 @@ export const HomePage: React.FC = () => {
                         {item.text}
                     </Button>
                 ))}
-            </Space>
+            </Flex>
             {/* Mobile Scroll Hint (Optional, can be added if we strictly want scroll on mobile) */}
             <style>{`
                 @media (max-width: 576px) {
-                    .ant-space {
+                    .ant-flex {
                         flex-wrap: nowrap !important;
                         overflow-x: auto;
                         justify-content: flex-start !important;
@@ -294,7 +272,7 @@ export const HomePage: React.FC = () => {
                         -webkit-overflow-scrolling: touch;
                         scrollbar-width: none; /* Firefox */
                     }
-                    .ant-space::-webkit-scrollbar {
+                    .ant-flex::-webkit-scrollbar {
                         display: none; /* Chrome/Safari */
                     }
                 }
@@ -319,8 +297,13 @@ export const HomePage: React.FC = () => {
             </Row>
           </div>
 
-        </Space>
+        </Flex>
       </div>
+      <ImageSearchModal 
+        open={isImageSearchOpen} 
+        onCancel={() => setIsImageSearchOpen(false)} 
+        topK={topK}
+      />
     </div>
   );
 };

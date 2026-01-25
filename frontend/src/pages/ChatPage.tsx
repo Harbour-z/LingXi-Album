@@ -3,7 +3,6 @@ import {
   Layout,
   Input,
   Button,
-  List,
   Avatar,
   Card,
   Space,
@@ -196,7 +195,7 @@ export const ChatPage: React.FC = () => {
                <div style={{ display: 'flex', marginBottom: 24 }}>
                    <Space align="start" size={16}>
                         <Avatar icon={<RobotOutlined />} style={{ backgroundColor: '#52c41a' }} />
-                        <Card size="small" bordered={false} style={{ backgroundColor: '#f6f6f6', borderRadius: '4px 16px 16px 16px' }}>
+                        <Card size="small" variant="borderless" style={{ backgroundColor: '#f6f6f6', borderRadius: '4px 16px 16px 16px' }}>
                              <Space>
                                  <Spin size="small" />
                                  <Text type="secondary">正在思考...</Text>
@@ -227,7 +226,7 @@ export const ChatPage: React.FC = () => {
                     onKeyDown={handleKeyDown}
                     placeholder="输入消息..."
                     autoSize={{ minRows: 1, maxRows: 6 }}
-                    bordered={false}
+                    variant="borderless"
                     style={{ 
                         resize: 'none', 
                         padding: '8px 12px', 

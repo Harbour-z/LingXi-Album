@@ -70,13 +70,16 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                 messages: [...state.messages, agentMessage],
                 isLoading: false,
             }));
-        } catch (error: any) {
+        } catch (error: unknown) {
             clearTimeout(timeoutId);
             
             let errorMessage = error instanceof Error ? error.message : '发送失败';
+            const errorRecord = typeof error === 'object' && error !== null ? (error as Record<string, unknown>) : null;
+            const errorName = typeof errorRecord?.name === 'string' ? errorRecord.name : undefined;
+            const errorCode = typeof errorRecord?.code === 'string' ? errorRecord.code : undefined;
             
             // Handle Timeout / Abort
-            if (error.name === 'CanceledError' || error.name === 'AbortError' || error.code === 'ERR_CANCELED') {
+            if (errorName === 'CanceledError' || errorName === 'AbortError' || errorCode === 'ERR_CANCELED') {
                 errorMessage = '请求超时：检索可能较慢（首次加载/向量生成），请稍后重试。';
             }
 

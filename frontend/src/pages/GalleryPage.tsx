@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import {
   Input,
   Radio,
@@ -11,6 +11,7 @@ import {
   Row,
   Col,
   Space,
+  Flex,
   Typography,
   Tag,
   Button,
@@ -29,8 +30,16 @@ import type { ImageResult } from '../api/types';
 const { Search } = Input;
 const { Text } = Typography;
 
+type GalleryLocationState = {
+  searchResults?: ImageResult[];
+  total?: number;
+  searchQuery?: string;
+};
+
 export const GalleryPage: React.FC = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const locationState = (location.state ?? null) as GalleryLocationState | null;
   const initialQuery = searchParams.get('q') || '';
   const initialTopK = parseInt(searchParams.get('top_k') || '10', 10);
   const [images, setImages] = useState<ImageResult[]>([]);
@@ -44,11 +53,9 @@ export const GalleryPage: React.FC = () => {
   const [topK, setTopK] = useState(initialTopK);
 
   const fetchImages = useCallback(async (pageNum: number, size: number) => {
-    console.log('Fetching images...', { pageNum, size });
     setLoading(true);
     try {
       const result = await listImages(pageNum, size, 'created_at', 'desc');
-      console.log('Fetch result:', result);
       
       // Ensure result and result.data are valid
       const rawData = result && result.data ? result.data : [];
@@ -70,8 +77,7 @@ export const GalleryPage: React.FC = () => {
       }));
       setImages(mappedImages);
       setTotal(result.total || 0);
-    } catch (err: any) {
-      console.error('Failed to fetch images:', err);
+    } catch {
       // message.error(err.message || '加载图片失败'); // Don't show error toast on initial load failure if it's transient
       setImages([]); 
     } finally {
@@ -79,7 +85,7 @@ export const GalleryPage: React.FC = () => {
     }
   }, []);
 
-  const handleSearch = useCallback(async (value: string, eventOrTopK?: any) => {
+  const handleSearch = useCallback(async (value: string, eventOrTopK?: unknown) => {
     if (!value.trim()) {
       setSearchQuery('');
       setIsSearching(false);
@@ -101,8 +107,9 @@ export const GalleryPage: React.FC = () => {
       setImages(result.data);
       setTotal(result.total);
       setPage(1);
-    } catch (err: any) {
-      message.error(err.message || '搜索失败');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : '搜索失败';
+      message.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -138,6 +145,13 @@ export const GalleryPage: React.FC = () => {
       }
     } else {
       // Case 2: URL has NO query
+      // Check if we have state from navigation (Image Search)
+      if (locationState?.searchResults) {
+          // Do nothing here, let the other effect handle it.
+          // We just prevent resetting isSearching to false.
+          return;
+      }
+
       // If we were searching, we need to reset.
       if (isSearching) {
         setIsSearching(false);
@@ -146,7 +160,21 @@ export const GalleryPage: React.FC = () => {
         // Effect 2 will handle fetching default images when isSearching becomes false
       }
     }
-  }, [searchParams]); // Depend ONLY on searchParams to avoid loops
+  }, [searchParams, locationState]); // Add location.state to deps
+
+  // Effect: Handle location state (e.g. from Image Search)
+  useEffect(() => {
+    if (locationState?.searchResults) {
+        setImages(locationState.searchResults);
+        setTotal(locationState.total || locationState.searchResults.length);
+        setIsSearching(true);
+        setSearchQuery(locationState.searchQuery || 'Image Search');
+        setLoading(false);
+        
+        // Clear state to prevent reapplying on refresh - optional but good practice
+        // window.history.replaceState({}, document.title);
+    }
+  }, [locationState]);
 
   // Effect 2: Handle data fetching for non-search mode (View All)
   useEffect(() => {
@@ -154,11 +182,11 @@ export const GalleryPage: React.FC = () => {
     if (!isSearching) {
       fetchImages(page, pageSize);
     }
-  }, [page, pageSize, isSearching]); // Removed fetchImages from deps to be safe, though useCallback handles it
+  }, [page, pageSize, isSearching, fetchImages]);
 
   return (
     <div style={{ maxWidth: 1400, margin: '0 auto' }}>
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      <Space orientation="vertical" size="large" style={{ width: '100%' }}>
         
         {/* Header / Filter Bar */}
         <Card>
@@ -260,7 +288,7 @@ export const GalleryPage: React.FC = () => {
                   ))}
                 </Row>
               ) : (
-                 <Space direction="vertical" style={{ width: '100%' }}>
+                 <Flex vertical gap="small" style={{ width: '100%' }}>
                     {images.map(img => (
                         <Card key={img.id} styles={{ body: { padding: 12 } }}>
                             <Row gutter={16} align="middle">
@@ -288,7 +316,7 @@ export const GalleryPage: React.FC = () => {
                             </Row>
                         </Card>
                     ))}
-                 </Space>
+                 </Flex>
               )}
             </Image.PreviewGroup>
 

@@ -8,8 +8,8 @@ import {
   List,
   Typography,
   message,
-  Progress,
   Space,
+  Flex,
   Form,
   Checkbox,
   Tag,
@@ -20,7 +20,6 @@ import {
   LinkOutlined,
   CloudUploadOutlined,
   DeleteOutlined,
-  FileImageOutlined,
 } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd/es/upload/interface';
 import { uploadImage, listImages, ImageListItem } from '../api/storage';
@@ -31,7 +30,6 @@ const { TabPane } = Tabs;
 
 export const UploadPage: React.FC = () => {
   const [fileList, setFileList] = useState<UploadFile[]>([]);
-  const [uploading, setUploading] = useState(false);
   const [autoIndex, setAutoIndex] = useState(true);
   const [tags, setTags] = useState<string[]>([]);
   const [description, setDescription] = useState('');
@@ -62,27 +60,34 @@ export const UploadPage: React.FC = () => {
     }
   };
 
-  const handleUpload = async (options: any) => {
+  const handleUpload: NonNullable<UploadProps['customRequest']> = async (options) => {
     const { file, onSuccess, onError, onProgress } = options;
-    
+
+    if (!(file instanceof File)) {
+      const error = new Error('文件类型不支持');
+      message.error(error.message);
+      onError?.(error);
+      return;
+    }
+
     try {
-      // Create a fake file object for AntD if needed, but we pass the raw file
       const response = await uploadImage(
         file,
         autoIndex,
         tags,
         description,
         (percent) => {
-          onProgress({ percent });
+          onProgress?.({ percent });
         }
       );
       
       message.success(`${file.name} 上传成功`);
-      onSuccess(response);
-      fetchHistory(); // Refresh history
-    } catch (err: any) {
-      message.error(`${file.name} 上传失败: ${err.message}`);
-      onError(err);
+      onSuccess?.(response);
+      void fetchHistory();
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : '未知错误';
+      message.error(`${file.name} 上传失败: ${errorMessage}`);
+      onError?.(err instanceof Error ? err : new Error(errorMessage));
     }
   };
 
@@ -131,8 +136,9 @@ export const UploadPage: React.FC = () => {
         message.success('URL 图片上传成功');
         form.resetFields();
         fetchHistory();
-    } catch (error: any) {
-      message.error(`URL 上传失败: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      message.error(`URL 上传失败: ${errorMessage}`);
     } finally {
       setUrlLoading(false);
     }
@@ -153,7 +159,7 @@ export const UploadPage: React.FC = () => {
         <Tabs defaultActiveKey="local">
           <TabPane tab={<span><InboxOutlined />本地上传</span>} key="local">
              <div style={{ marginBottom: 16 }}>
-                <Space direction="vertical" style={{ width: '100%' }}>
+                <Flex vertical gap="small" style={{ width: '100%' }}>
                     <div style={{ marginBottom: 8 }}>
                         <Text strong>全局设置 (应用于当前批次): </Text>
                         <Checkbox checked={autoIndex} onChange={e => setAutoIndex(e.target.checked)}>
@@ -180,7 +186,7 @@ export const UploadPage: React.FC = () => {
                         onChange={e => setDescription(e.target.value)}
                         rows={2}
                     />
-                </Space>
+                </Flex>
              </div>
 
             <Dragger {...props} height={200}>
@@ -240,10 +246,10 @@ export const UploadPage: React.FC = () => {
                         <Card.Meta
                             title={item.filename}
                             description={
-                                <Space direction="vertical" size={0}>
+                                <Flex vertical gap={0}>
                                     <Text type="secondary" style={{ fontSize: 12 }}>{new Date(item.created_at).toLocaleString()}</Text>
                                     <Text type="secondary" style={{ fontSize: 12 }}>{(item.file_size / 1024).toFixed(1)} KB</Text>
-                                </Space>
+                                </Flex>
                             }
                         />
                     </Card>

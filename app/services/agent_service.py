@@ -147,7 +147,7 @@ class AgentService:
             description="Smart Album Agent powered by OpenJiuwen",
             model=model_config,
             prompt_template=[
-                {"role": "system", "content": "You are a helpful smart album assistant. You can search images, check system time, and answer user questions. When user asks to search for images, use search_tool. When user asks for time, use get_current_time."}
+                {"role": "system", "content": "You are a helpful smart album assistant. You can search images, generate mutiple styles of images, check system time, and answer user questions. When user asks to search for images, use search_tool. When user asks for time, use get_current_time."}
             ]
         )
         

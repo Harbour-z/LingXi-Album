@@ -2,7 +2,6 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Card, theme, FloatButton } from 'antd';
-import { ArrowUpOutlined } from '@ant-design/icons';
 
 const markdownContent = `
 # 产品架构设计方案
@@ -81,7 +80,7 @@ export const ArchitecturePage: React.FC = () => {
       padding: '24px 16px' 
     }}>
       <Card 
-        bordered={false}
+        variant="borderless"
         style={{
           boxShadow: '0 8px 32px rgba(0,0,0,0.08)', 
           borderRadius: 16,
@@ -93,12 +92,12 @@ export const ArchitecturePage: React.FC = () => {
           <ReactMarkdown 
             remarkPlugins={[remarkGfm]}
             components={{
-              h1: ({node, ...props}) => <h1 style={{ color: token.colorPrimary, borderBottom: `1px solid ${token.colorBorderSecondary}`, paddingBottom: 16, marginBottom: 24 }} {...props} />,
-              h2: ({node, ...props}) => <h2 style={{ color: token.colorTextHeading, marginTop: 32, marginBottom: 16 }} {...props} />,
-              h3: ({node, ...props}) => <h3 style={{ color: token.colorTextHeading, marginTop: 24, marginBottom: 12 }} {...props} />,
-              p: ({node, ...props}) => <p style={{ color: token.colorText, lineHeight: 1.8, marginBottom: 16 }} {...props} />,
-              li: ({node, ...props}) => <li style={{ color: token.colorText, lineHeight: 1.8, marginBottom: 8 }} {...props} />,
-              pre: ({node, ...props}) => (
+              h1: ({ ...props }) => <h1 style={{ color: token.colorPrimary, borderBottom: `1px solid ${token.colorBorderSecondary}`, paddingBottom: 16, marginBottom: 24 }} {...props} />,
+              h2: ({ ...props }) => <h2 style={{ color: token.colorTextHeading, marginTop: 32, marginBottom: 16 }} {...props} />,
+              h3: ({ ...props }) => <h3 style={{ color: token.colorTextHeading, marginTop: 24, marginBottom: 12 }} {...props} />,
+              p: ({ ...props }) => <p style={{ color: token.colorText, lineHeight: 1.8, marginBottom: 16 }} {...props} />,
+              li: ({ ...props }) => <li style={{ color: token.colorText, lineHeight: 1.8, marginBottom: 8 }} {...props} />,
+              pre: ({ ...props }) => (
                 <pre style={{ 
                     background: token.colorFillAlter, 
                     padding: 16, 
@@ -108,9 +107,8 @@ export const ArchitecturePage: React.FC = () => {
                     border: `1px solid ${token.colorBorderSecondary}`
                 }} {...props} />
               ),
-              code: ({node, ...props}) => {
-                // @ts-ignore
-                const { inline } = props;
+              code: (props: React.HTMLAttributes<HTMLElement> & { inline?: boolean }) => {
+                const { inline, ...rest } = props;
                 if (inline) {
                    return (
                       <code 
@@ -122,11 +120,11 @@ export const ArchitecturePage: React.FC = () => {
                               fontFamily: 'monospace',
                               fontSize: '0.9em'
                           }} 
-                          {...props} 
+                          {...rest} 
                       />
                   )
                 }
-                return <code style={{ fontFamily: 'monospace', color: 'inherit' }} {...props} />;
+                return <code style={{ fontFamily: 'monospace', color: 'inherit' }} {...rest} />;
               }
             }}
           >

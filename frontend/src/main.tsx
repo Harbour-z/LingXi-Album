@@ -6,7 +6,7 @@ import './index.css'
 import App from './App.tsx'
 import { useThemeStore } from './store/themeStore'
 
-const RootApp = () => {
+export const RootApp = () => {
   const { isDarkMode } = useThemeStore();
 
   useEffect(() => {
