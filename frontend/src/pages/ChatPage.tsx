@@ -28,7 +28,7 @@ const { Text } = Typography;
 const { TextArea } = Input;
 
 export const ChatPage: React.FC = () => {
-  const { messages, isLoading, sendMessage, clearHistory } = useChatStore();
+  const { messages, isLoading, sendMessage, clearHistory, pollSystemEvents } = useChatStore();
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -36,6 +36,15 @@ export const ChatPage: React.FC = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
+
+  // 定期轮询系统事件（每5秒）
+  useEffect(() => {
+    const interval = setInterval(() => {
+      pollSystemEvents();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [pollSystemEvents]);
 
   const handleSend = async () => {
     if (!inputValue.trim() || isLoading) return;
@@ -53,6 +62,8 @@ export const ChatPage: React.FC = () => {
 
   const renderMessage = (msg: ChatMessage) => {
     const isUser = msg.type === 'user';
+    const isSystem = msg.type === 'system';
+    
     return (
       <div
         key={msg.id}
@@ -64,9 +75,13 @@ export const ChatPage: React.FC = () => {
       >
         <Space align="start" size={16} style={{ flexDirection: isUser ? 'row-reverse' : 'row' }}>
           <Avatar
-            icon={isUser ? <UserOutlined /> : <RobotOutlined />}
+            icon={
+              isUser ? <UserOutlined /> : 
+              isSystem ? <BulbOutlined /> : 
+              <RobotOutlined />
+            }
             style={{ 
-                backgroundColor: isUser ? '#1677ff' : '#52c41a',
+                backgroundColor: isUser ? '#1677ff' : isSystem ? '#faad14' : '#52c41a',
                 flexShrink: 0 
             }}
           />
@@ -75,15 +90,40 @@ export const ChatPage: React.FC = () => {
               size="small"
               variant="borderless"
               style={{
-                backgroundColor: isUser ? '#e6f7ff' : '#f6f6f6',
+                backgroundColor: isUser ? '#e6f7ff' : isSystem ? '#fffbe6' : '#f6f6f6',
                 borderRadius: isUser ? '16px 4px 16px 16px' : '4px 16px 16px 16px',
-                boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                border: isSystem ? '1px solid #ffe58f' : undefined
               }}
               styles={{ body: { padding: '12px 16px' } }}
             >
               <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
                 {msg.content}
               </div>
+              
+              {/* 点云预览链接 */}
+              {isSystem && msg.viewUrl && (
+                <div style={{ marginTop: 12 }}>
+                  <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                    <Button 
+                      type="primary" 
+                      href={msg.viewUrl} 
+                      target="_blank" 
+                      icon={<PictureOutlined />}
+                      block
+                    >
+                      在浏览器中查看3D模型
+                    </Button>
+                    <Button 
+                      href={`/api/v1/pointcloud/download/${msg.pointcloudId}`} 
+                      download="pointcloud.ply"
+                      block
+                    >
+                      下载PLY文件
+                    </Button>
+                  </Space>
+                </div>
+              )}
             </Card>
 
             {/* Images */}

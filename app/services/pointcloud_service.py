@@ -162,10 +162,12 @@ class PointCloudService:
 
         # 更新状态为处理中
         pointcloud_info["status"] = PointCloudGenerationStatus.PROCESSING
+        logger.info(f"[PointCloudService] 点云任务状态更新 - ID: {pointcloud_id}, 状态: PROCESSING")
 
         try:
             # 调用3DGS服务
             result = await self._call_3dgs_service(image_path, quality)
+            logger.info(f"[PointCloudService] 3DGS服务返回 - ID: {pointcloud_id}, success: {result.get('success')}")
 
             if result.get("success"):
                 # 保存PLY文件
@@ -188,11 +190,14 @@ class PointCloudService:
 
                 # 如果有预览 URL，保存它
                 if view_url:
-                    update_data["view_url"] = f"{self._service_url}{view_url}"
+                    # 判断 view_url 是否已经是完整URL，避免重复拼接
+                    if view_url.startswith("http://") or view_url.startswith("https://"):
+                        update_data["view_url"] = view_url
+                    else:
+                        update_data["view_url"] = f"{self._service_url}{view_url}"
 
                 pointcloud_info.update(update_data)
-
-                logger.info(f"点云生成成功: {pointcloud_id}, 点数: {point_count}, 预览URL: {view_url}")
+                logger.info(f"[PointCloudService] ✓ 点云任务状态更新 - ID: {pointcloud_id}, 状态: COMPLETED, view_url: {update_data.get('view_url')}")
             else:
                 # 生成失败
                 pointcloud_info.update({
@@ -200,7 +205,7 @@ class PointCloudService:
                     "error_message": result.get("error", "Unknown error"),
                     "completed_at": datetime.now()
                 })
-                logger.error(f"点云生成失败: {pointcloud_id}, 错误: {result.get('error')}")
+                logger.error(f"[PointCloudService] ✗ 点云任务状态更新 - ID: {pointcloud_id}, 状态: FAILED, 错误: {result.get('error')}")
 
         except Exception as e:
             logger.error(f"点云生成异常: {pointcloud_id}, 错误: {e}", exc_info=True)
@@ -367,7 +372,43 @@ class PointCloudService:
         Returns:
             点云信息字典或None
         """
-        return self._pointclouds.get(pointcloud_id)
+        result = self._pointclouds.get(pointcloud_id)
+        
+        if result:
+            logger.debug(f"[PointCloudService] 从内存缓存获取点云信息 - ID: {pointcloud_id}, 状态: {result.get('status')}, view_url: {result.get('view_url')}")
+            return result
+        
+        # 如果内存缓存中没有，尝试从文件系统恢复任务信息
+        logger.warning(f"[PointCloudService] 内存缓存中未找到点云 - ID: {pointcloud_id}, 尝试从文件系统恢复")
+        
+        try:
+            # 尝试查找PLY文件
+            ply_path = self._get_pointcloud_path(pointcloud_id)
+            if ply_path.exists():
+                # 文件存在，说明任务已完成，恢复任务信息
+                file_stat = ply_path.stat()
+                recovered_info = {
+                    "pointcloud_id": pointcloud_id,
+                    "status": PointCloudGenerationStatus.COMPLETED,
+                    "file_path": str(ply_path.relative_to(self._storage_path)),
+                    "file_size": file_stat.st_size,
+                    "point_count": file_stat.st_size // 45,  # 粗略估计
+                    "created_at": datetime.fromtimestamp(file_stat.st_ctime),
+                    "completed_at": datetime.fromtimestamp(file_stat.st_mtime),
+                    "view_url": None,  # 文件恢复时没有预览URL
+                    "source_image_id": None,
+                    "error_message": None
+                }
+                
+                # 将恢复的信息保存到内存缓存
+                self._pointclouds[pointcloud_id] = recovered_info
+                logger.info(f"[PointCloudService] ✓ 从文件系统恢复点云信息 - ID: {pointcloud_id}")
+                return recovered_info
+        except Exception as e:
+            logger.error(f"[PointCloudService] 从文件系统恢复点云信息失败 - ID: {pointcloud_id}, 错误: {e}")
+        
+        logger.warning(f"[PointCloudService] 点云不存在 - ID: {pointcloud_id}")
+        return None
 
     def get_pointcloud_file(self, pointcloud_id: str) -> Optional[Tuple[bytes, str]]:
         """

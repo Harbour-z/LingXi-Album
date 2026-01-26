@@ -128,6 +128,50 @@ async def get_pointcloud(
     )
 
 
+@router.post(
+    "/status",
+    response_model=PointCloudResponse,
+    summary="查询点云状态（POST方式）",
+    description="根据ID查询点云生成状态（通过POST请求体传递参数，兼容OpenJiuwen）"
+)
+async def get_pointcloud_status_post(
+    request: dict,
+    services: tuple = Depends(get_services)
+):
+    """查询点云状态（POST方式）"""
+    pointcloud_svc, _ = services
+    
+    # 从请求体中获取 pointcloud_id
+    pointcloud_id = request.get("pointcloud_id")
+    if not pointcloud_id:
+        raise HTTPException(status_code=400, detail="缺少 pointcloud_id 参数")
+
+    result = pointcloud_svc.get_pointcloud(pointcloud_id)
+    if not result:
+        raise HTTPException(status_code=404, detail=f"点云不存在: {pointcloud_id}")
+
+    # 构造响应
+    pointcloud_result = PointCloudResult(
+        pointcloud_id=result["pointcloud_id"],
+        status=result["status"],
+        source_image_id=result["source_image_id"],
+        file_path=result["file_path"],
+        download_url=f"/api/v1/pointcloud/download/{result['pointcloud_id']}" if result.get("file_path") else None,
+        view_url=result.get("view_url"),  # 添加预览 URL
+        created_at=result["created_at"],
+        completed_at=result.get("completed_at"),
+        error_message=result.get("error_message"),
+        file_size=result.get("file_size"),
+        point_count=result.get("point_count")
+    )
+
+    return PointCloudResponse(
+        status=ResponseStatus.SUCCESS,
+        message="获取成功",
+        data=pointcloud_result
+    )
+
+
 @router.get(
     "/download/{pointcloud_id}",
     summary="下载点云文件",
