@@ -4,9 +4,10 @@
 """
 
 import logging
-from typing import List, Optional
+import json
+from typing import List, Optional, Union
 from fastapi import APIRouter, UploadFile, File, Form, Body, HTTPException, Depends
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from ..services import get_image_recommendation_service, ImageRecommendationService
 from ..models import BaseResponse, ResponseStatus
@@ -20,6 +21,24 @@ class ImageRecommendationRequest(BaseModel):
     """图片推荐请求"""
     images: List[str] = Field(..., description="图片ID列表")
     user_preference: Optional[str] = Field(None, description="用户偏好或分析维度（可选）")
+    
+    @field_validator('images', mode='before')
+    @classmethod
+    def parse_images(cls, v):
+        """
+        解析 images 参数，支持两种格式：
+        1. List[str]: 标准数组格式
+        2. str: OpenJiuwen 序列化的字符串格式，如 "['id1', 'id2']"
+        """
+        if isinstance(v, str):
+            try:
+                return json.loads(v.replace("'", '"'))
+            except json.JSONDecodeError:
+                raise ValueError(f"无法解析 images 参数: {v}")
+        elif isinstance(v, list):
+            return v
+        else:
+            raise ValueError(f"images 参数必须是字符串或数组，当前类型: {type(v)}")
 
 
 class ImageRecommendationUploadRequest(BaseModel):
@@ -66,13 +85,21 @@ async def recommend_images_by_ids(
         推荐结果
     """
     import logging
+    import json
     logger = logging.getLogger(__name__)
+    
+    logger.info(f"[API] 收到图片推荐请求: images={request.images}, user_preference={request.user_preference}")
     
     if not rec_svc.is_initialized:
         raise HTTPException(status_code=503, detail="图片推荐服务未初始化")
-        
-    if not request.images:
+    
+    images_list = request.images
+    
+    if not images_list:
         raise HTTPException(status_code=400, detail="图片ID列表不能为空")
+    
+    if len(images_list) > 10:
+        raise HTTPException(status_code=400, detail="最多支持分析10张图片")
         
     if len(request.images) > 10:
         raise HTTPException(status_code=400, detail="最多支持分析10张图片")

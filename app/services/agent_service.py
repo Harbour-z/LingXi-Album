@@ -178,6 +178,14 @@ class AgentService:
                         "- Use get_current_time when user asks for time or when you need to calculate date ranges.\n"
                         "- Use get_photo_meta_schema when user needs to understand available metadata fields.\n"
                         
+                        "IMAGE EDITING:\n"
+                        "- Use edit_image when user wants to edit or transform photos, especially for style conversions.\n"
+                        "- Supported editing operations include: style conversion (anime, cartoon, oil painting, watercolor, sketch, cyberpunk, retro, cinematic), text editing, object addition/deletion/modification, background replacement, photo restoration.\n"
+                        "- Common trigger phrases: '转成动漫风格', '换个风格', '编辑这张图片', '改成XXX风格', '把这张图转成...', '用动漫风格', '生成卡通版本'.\n"
+                        "- When editing images, you MUST first search for the image to get its ID, then call edit_image with the image_id and appropriate prompt.\n"
+                        "- The edit_image tool automatically enables intelligent prompt extension to optimize simple descriptions.\n"
+                        "- After editing, display the generated images using Markdown format: ![edited image](/api/v1/storage/images/{image_id}).\n"
+                        
                         "ERROR HANDLING:\n"
                         "- If a tool call fails, try to understand the error and provide helpful feedback to the user.\n"
                         "- If you cannot find photos matching the criteria, suggest alternative search terms or ask for clarification.\n"
@@ -417,7 +425,7 @@ class AgentService:
             name="recommend_images",
             description="智能图片推荐工具。使用多模态AI模型（qwen3-max + qwen3-vl-plus）对多张照片进行深度分析，从构图美学、色彩搭配、光影运用、主题表达、情感传达、创意独特性、故事性等艺术维度进行评估，并推荐最佳照片。适用于用户询问'哪一张拍的最好'、'帮我选一张最好的'、'推荐最佳照片'等场景。严禁仅基于分辨率、文件大小等技术参数进行评价。",
             params=[
-                Param(name="images", description="图片ID列表（最多10张），每个ID应为字符串类型", param_type="array<string>", required=True),
+                Param(name="images", description="图片ID列表（最多10张），JSON数组格式：[\"id1\", \"id2\"]", param_type="array", required=True),
                 Param(name="user_preference", description="用户偏好或分析维度（可选），例如：'我更喜欢构图好的'、'关注色彩搭配'", param_type="string", required=False, default_value="")
             ],
             path=f"{api_base}{api_prefix}/image-recommendation/analyze",
@@ -555,6 +563,57 @@ class AgentService:
             ]
         )
         self._tools.append(tool_recommend_images)
+
+        tool_edit_image = RestfulApi(
+            name="edit_image",
+            description="图片编辑工具。使用 qwen-image-edit-plus 模型对图片进行风格转换和编辑。支持动漫风格、卡通风格、油画风格、水彩风格、素描风格、赛博朋克风格、复古风格、电影风格等多种风格转换，以及文字编辑、物体增删改、背景替换等编辑操作。当用户说'把这张图转成动漫风格'、'帮我换个风格'、'编辑这张图片'等时使用。重要：此工具会自动开启智能提示词改写功能以优化生成效果。",
+            params=[
+                Param(name="image_id", description="要编辑的图片ID（必须先通过检索工具获取图片ID）", param_type="string", required=True, method="Body"),
+                Param(name="prompt", description="编辑提示词，例如：'将图片转换为动漫风格'", param_type="string", required=True, method="Body"),
+                Param(name="negative_prompt", description="反向提示词，描述不希望出现的内容，例如：'模糊，多余的手指'", param_type="string", required=False, default_value=" ", method="Body"),
+                Param(name="prompt_extend", description="是否开启智能提示词改写功能（默认为 true，会优化简单描述的生成效果）", param_type="boolean", required=False, default_value=True, method="Body"),
+                Param(name="n", description="生成图片数量（1-6张）", param_type="integer", required=False, default_value=1, method="Body"),
+                Param(name="size", description="输出图片分辨率，格式为 '宽*高'，例如 '1024*1536'", param_type="string", required=False, method="Body"),
+                Param(name="watermark", description="是否添加水印", param_type="boolean", required=False, default_value=False, method="Body"),
+                Param(name="seed", description="随机数种子（可选）", param_type="integer", required=False, method="Body"),
+                Param(name="style_tag", description="风格标签，用于元数据记录，例如：'anime', 'cartoon'", param_type="string", required=False, method="Body")
+            ],
+            path=f"{api_base}{api_prefix}/image-edit/edit",
+            headers={"Content-Type": "application/json"},
+            method="POST",
+            response=[
+                Param(name="status", description="响应状态", param_type="string"),
+                Param(name="message", description="响应消息", param_type="string"),
+                Param(name="data", description="编辑结果，包含生成的图片信息", param_type="object", schema=[
+                    Param(name="success", description="操作是否成功", param_type="boolean", required=True),
+                    Param(name="saved_images", description="保存的图片列表", param_type="array", required=True, schema=[
+                        Param(name="image_id", description="图片ID", param_type="string", required=True),
+                        Param(name="url", description="图片URL", param_type="string", required=True),
+                        Param(name="metadata", description="元数据信息", param_type="object", required=True, schema=[
+                            Param(name="source_image_id", description="源图片ID", param_type="string", required=False),
+                            Param(name="edit_prompt", description="编辑提示词", param_type="string", required=False),
+                            Param(name="edit_style", description="编辑风格", param_type="string", required=False),
+                            Param(name="edit_model", description="使用的编辑模型", param_type="string", required=False),
+                            Param(name="edit_parameters", description="编辑参数", param_type="object", required=False, schema=[
+                                Param(name="negative_prompt", description="反向提示词", param_type="string", required=False),
+                                Param(name="prompt_extend", description="是否开启智能提示词改写", param_type="boolean", required=False),
+                                Param(name="n", description="生成图片数量", param_type="integer", required=False),
+                                Param(name="size", description="输出图片分辨率", param_type="string", required=False),
+                                Param(name="watermark", description="是否添加水印", param_type="boolean", required=False),
+                                Param(name="seed", description="随机数种子", param_type="integer", required=False)
+                            ]),
+                            Param(name="edit_time", description="编辑时间", param_type="string", required=False),
+                            Param(name="tags", description="标签列表", param_type="array", required=False, schema=[
+                                Param(name="tag", description="标签名称", param_type="string", required=False)
+                            ])
+                        ])
+                    ]),
+                    Param(name="total_generated", description="生成的图片总数", param_type="integer", required=True),
+                    Param(name="total_saved", description="成功保存的图片数量", param_type="integer", required=True)
+                ])
+            ]
+        )
+        self._tools.append(tool_edit_image)
 
     @property
     def is_initialized(self) -> bool:

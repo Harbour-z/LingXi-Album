@@ -8,6 +8,7 @@ from .storage_service import StorageService, get_storage_service
 from .search_service import SearchService, get_search_service
 from .agent_service import AgentService, get_agent_service
 from .image_recommendation_service import ImageRecommendationService, get_image_recommendation_service
+from .image_edit_service import ImageEditService, get_image_edit_service
 
 __all__ = [
     "EmbeddingService",
@@ -22,4 +23,6 @@ __all__ = [
     "get_agent_service",
     "ImageRecommendationService",
     "get_image_recommendation_service",
+    "ImageEditService",
+    "get_image_edit_service",
 ]

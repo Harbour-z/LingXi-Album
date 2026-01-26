@@ -38,6 +38,11 @@ from .schemas import (
     ImageRecommendation,
     DeleteConfirmationRequest,
     DeleteConfirmationResponse,
+    # 图片编辑
+    ImageEditRequest,
+    EditedImageInfo,
+    ImageEditResponse,
+    ImageEditResult,
 )
 
 __all__ = [
@@ -68,4 +73,8 @@ __all__ = [
     "ImageRecommendation",
     "DeleteConfirmationRequest",
     "DeleteConfirmationResponse",
+    "ImageEditRequest",
+    "EditedImageInfo",
+    "ImageEditResponse",
+    "ImageEditResult",
 ]

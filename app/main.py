@@ -18,6 +18,7 @@ from .services import (
     get_storage_service,
     get_search_service,
     get_image_recommendation_service,
+    get_image_edit_service,
 )
 from .routers import (
     embedding_router,
@@ -27,6 +28,7 @@ from .routers import (
     agent_router,
     social_router,
     image_recommendation_router,
+    image_edit_router,
 )
 from .models import SystemStatus
 
@@ -102,6 +104,11 @@ async def lifespan(app: FastAPI):
     image_recommendation_service = get_image_recommendation_service()
     image_recommendation_service.initialize(settings)
 
+    # 初始化图片编辑服务
+    logger.info("初始化图片编辑服务...")
+    image_edit_service = get_image_edit_service()
+    image_edit_service.initialize()
+
     logger.info("="*50)
     logger.info("所有服务初始化完成!")
     logger.info(f"API文档地址: http://localhost:8000/docs")
@@ -132,6 +139,7 @@ def create_app() -> FastAPI:
 - **以图搜图**: 查找相似图片
 - **向量数据库管理**: 完整的CRUD操作
 - **图片存储管理**: 上传、下载、删除图片
+- **图片风格编辑**: 基于qwen-image-edit-plus的图片风格转换和编辑
 
 ## 技术特点
 
@@ -139,6 +147,7 @@ def create_app() -> FastAPI:
 - 使用Qdrant向量数据库存储和检索
 - 支持本地和Docker部署模式切换
 - 预留AI Agent框架集成接口
+- 集成通义千问图像编辑模型
 
 ## API模块
 
@@ -147,6 +156,7 @@ def create_app() -> FastAPI:
 - `/api/v1/search` - 智能搜索接口
 - `/api/v1/storage` - 图片存储接口
 - `/api/v1/agent` - AI Agent集成接口
+- `/api/v1/image-edit` - 图片编辑接口
         """,
         openapi_tags=[
             {"name": "Embedding", "description": "多模态Embedding生成"},
@@ -154,6 +164,7 @@ def create_app() -> FastAPI:
             {"name": "Search", "description": "智能图像检索"},
             {"name": "Storage", "description": "图片存储管理"},
             {"name": "Agent Integration", "description": "AI Agent框架集成（预留）"},
+            {"name": "Image Editing", "description": "图片风格转换和编辑"},
             {"name": "System", "description": "系统状态和健康检查"},
         ],
         lifespan=lifespan
@@ -177,6 +188,7 @@ def create_app() -> FastAPI:
     app.include_router(agent_router, prefix=api_prefix)
     app.include_router(social_router, prefix=api_prefix)
     app.include_router(image_recommendation_router, prefix=api_prefix)
+    app.include_router(image_edit_router, prefix=api_prefix)
 
     # 全局异常处理
     @app.exception_handler(Exception)
@@ -190,6 +202,27 @@ def create_app() -> FastAPI:
                 "detail": "服务器内部错误"
             }
         )
+    
+    # 请求日志中间件 - 用于调试推荐工具的参数传递
+    @app.middleware("http")
+    async def log_requests(request: Request, call_next):
+        # 只记录image-recommendation端点的POST请求
+        if "image-recommendation" in request.url.path and request.method == "POST":
+            import json
+            import io
+            from fastapi.concurrency import iterate_in_threadpool
+            
+            # 读取请求体
+            body = await request.body()
+            
+            logger.info(f"[Middleware] 捕获到图片推荐请求")
+            logger.info(f"[Middleware] URL: {request.url.path}")
+            logger.info(f"[Middleware] Method: {request.method}")
+            logger.info(f"[Middleware] Content-Type: {request.headers.get('content-type')}")
+            logger.info(f"[Middleware] Body: {body.decode('utf-8')}")
+        
+        response = await call_next(request)
+        return response
 
     # 根路由
     @app.get("/", tags=["System"])
