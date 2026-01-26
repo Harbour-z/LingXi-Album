@@ -78,9 +78,13 @@ export interface UploadResponse {
 
 export interface ChatMessage {
     id: string;
-    type: 'user' | 'agent';
+    type: 'user' | 'agent' | 'system';
     content: string;
     images?: ImageResult[];
     suggestions?: string[];
     timestamp: Date;
+    event?: string;
+    eventId?: string;
+    pointcloudId?: string;
+    viewUrl?: string;
 }

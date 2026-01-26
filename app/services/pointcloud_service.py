@@ -188,7 +188,11 @@ class PointCloudService:
 
                 # 如果有预览 URL，保存它
                 if view_url:
-                    update_data["view_url"] = f"{self._service_url}{view_url}"
+                    # 判断 view_url 是否已经是完整URL，避免重复拼接
+                    if view_url.startswith("http://") or view_url.startswith("https://"):
+                        update_data["view_url"] = view_url
+                    else:
+                        update_data["view_url"] = f"{self._service_url}{view_url}"
 
                 pointcloud_info.update(update_data)
 

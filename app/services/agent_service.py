@@ -778,15 +778,44 @@ class AgentService:
 
             # 检测是否为点云生成请求，启动后台监控
             pointcloud_id = None
+            logger.info(f"[Agent] 检测点云生成请求 - query: {query}")
+            
             if self._detect_pointcloud_generation(query):
-                pointcloud_id = self._extract_pointcloud_id_from_response(response)
-                if pointcloud_id:
-                    logger.info(f"[Agent] 检测到点云生成任务，启动后台监控: {pointcloud_id}")
-                    # 启动后台监控任务（不阻塞主响应）
-                    asyncio.create_task(self._monitor_and_update_pointcloud(
-                        pointcloud_id=pointcloud_id,
-                        session_id=session_id
-                    ))
+                logger.info(f"[Agent] ✓ 检测到点云生成请求")
+                
+                # 直接从点云服务获取最新的任务ID，而不是从Agent回复中提取
+                from ..services import get_pointcloud_service
+                pointcloud_svc = get_pointcloud_service()
+                
+                logger.info(f"[Agent] 点云服务初始化状态: {pointcloud_svc.is_initialized}")
+                
+                # 获取所有点云任务，按创建时间倒序排序，取最新的一个
+                all_pointclouds = pointcloud_svc.list_pointclouds(page=1, page_size=1)[0]
+                logger.info(f"[Agent] 获取到 {len(all_pointclouds)} 个点云任务")
+                
+                if all_pointclouds:
+                    latest_pointcloud = all_pointclouds[0]
+                    pointcloud_id = latest_pointcloud.get("pointcloud_id")
+                    status = latest_pointcloud.get("status")
+                    
+                    logger.info(f"[Agent] 最新点云任务 - ID: {pointcloud_id}, 状态: {status}")
+                    
+                    # 只要有pointcloud_id就启动监控，无论状态如何
+                    # 如果已经完成，监控会立即返回结果
+                    # 如果未完成，监控会轮询直到完成
+                    if pointcloud_id:
+                        logger.info(f"[Agent] ✓ 启动后台监控任务: {pointcloud_id}, 状态: {status}")
+                        # 启动后台监控任务（不阻塞主响应）
+                        asyncio.create_task(self._monitor_and_update_pointcloud(
+                            pointcloud_id=pointcloud_id,
+                            session_id=session_id
+                        ))
+                    else:
+                        logger.warning(f"[Agent] 点云任务ID为空")
+                else:
+                    logger.warning(f"[Agent] 没有找到点云任务")
+            else:
+                logger.info(f"[Agent] ✗ 未检测到点云生成请求")
 
             return {
                 "answer": response,
@@ -847,6 +876,22 @@ class AgentService:
 
         logger.info(f"[Agent] 开始监控点云生成任务: {pointcloud_id}, 最大等待时间: {max_wait_seconds}秒")
 
+        # 立即检查一次状态，如果已经完成则直接返回
+        initial_pointcloud_info = pointcloud_svc.get_pointcloud(pointcloud_id)
+        if initial_pointcloud_info:
+            initial_status = initial_pointcloud_info.get("status")
+            initial_view_url = initial_pointcloud_info.get("view_url")
+            initial_point_count = initial_pointcloud_info.get("point_count")
+            
+            logger.info(f"[Agent] 初始状态检查 - 状态: {initial_status}, view_url: {initial_view_url}, 点数: {initial_point_count}")
+            
+            if initial_status == "completed":
+                logger.info(f"[Agent] ✓ 点云任务已完成，无需等待: {pointcloud_id}")
+                return initial_view_url if initial_view_url else ""
+            elif initial_status == "failed":
+                logger.error(f"[Agent] 点云任务已失败: {pointcloud_id}")
+                return None
+
         poll_interval = 5  # 每5秒轮询一次
         elapsed_time = 0
 
@@ -860,15 +905,19 @@ class AgentService:
 
                 status = pointcloud_info.get("status")
                 view_url = pointcloud_info.get("view_url")
+                file_path = pointcloud_info.get("file_path")
+                point_count = pointcloud_info.get("point_count")
 
-                logger.debug(f"[Agent] 点云状态: {status}, view_url: {view_url}, 已等待: {elapsed_time}秒")
+                logger.info(f"[Agent] 轮询点云状态: {status}, view_url={view_url}, file_path={file_path}, point_count={point_count}, 已等待: {elapsed_time}秒")
 
-                if status == "completed" and view_url:
-                    logger.info(f"[Agent] 点云生成完成，预览URL: {view_url}")
-                    return view_url
+                # 只要状态是completed就认为生成成功，不一定需要view_url
+                if status == "completed":
+                    logger.info(f"[Agent] ✓ 点云生成完成! ID: {pointcloud_id}, 点数: {point_count}, 预览URL: {view_url}")
+                    # 如果有view_url就返回，否则返回空字符串（表示已完成但没有预览URL）
+                    return view_url if view_url else ""
                 elif status == "failed":
                     error_msg = pointcloud_info.get("error_message", "未知错误")
-                    logger.error(f"[Agent] 点云生成失败: {error_msg}")
+                    logger.error(f"[Agent] ✗ 点云生成失败: {error_msg}")
                     return None
 
                 await asyncio.sleep(poll_interval)
@@ -879,7 +928,7 @@ class AgentService:
                 await asyncio.sleep(poll_interval)
                 elapsed_time += poll_interval
 
-        logger.warning(f"[Agent] 点云生成超时（{max_wait_seconds}秒），任务ID: {pointcloud_id}")
+        logger.warning(f"[Agent] ⏰ 点云生成超时（{max_wait_seconds}秒），任务ID: {pointcloud_id}")
         return None
 
     async def _monitor_and_update_pointcloud(
@@ -900,23 +949,41 @@ class AgentService:
             # 监控点云生成状态
             view_url = await self._monitor_pointcloud_generation(pointcloud_id)
 
-            if view_url:
+            # view_url可能是空字符串（表示已完成但没有预览URL）
+            if view_url is not None:
                 # 获取点云详细信息
                 from ..services import get_pointcloud_service
                 pointcloud_svc = get_pointcloud_service()
                 pointcloud_info = pointcloud_svc.get_pointcloud(pointcloud_id)
 
                 if pointcloud_info:
+                    # 构造下载URL
+                    download_url = f"/api/v1/pointcloud/download/{pointcloud_id}"
+                    
                     # 构造更新消息
-                    update_message = (
-                        f"\n\n✨ **3D点云生成完成！**\n\n"
-                        f"📸 源图片ID: `{pointcloud_info.get('source_image_id')}`\n"
-                        f"🎯 点云ID: `{pointcloud_id}`\n"
-                        f"📊 点数: {pointcloud_info.get('point_count', 'N/A'):,}\n"
-                        f"📁 文件大小: {pointcloud_info.get('file_size', 0) / 1024:.1f} KB\n"
-                        f"🔗 **预览链接**: [{view_url}]({view_url})\n\n"
-                        f"点击上方链接即可在浏览器中查看3D模型！"
-                    )
+                    if view_url:
+                        # 有预览URL的情况
+                        update_message = (
+                            f"\n\n✨ **3D点云生成完成！**\n\n"
+                            f"📸 源图片ID: `{pointcloud_info.get('source_image_id')}`\n"
+                            f"🎯 点云ID: `{pointcloud_id}`\n"
+                            f"📊 点数: {pointcloud_info.get('point_count', 'N/A'):,}\n"
+                            f"📁 文件大小: {pointcloud_info.get('file_size', 0) / 1024:.1f} KB\n"
+                            f"🔗 **预览链接**: [{view_url}]({view_url})\n"
+                            f"💾 **下载链接**: [{download_url}]({download_url})\n\n"
+                            f"点击上方链接即可在浏览器中查看3D模型或下载PLY文件！"
+                        )
+                    else:
+                        # 没有预览URL的情况
+                        update_message = (
+                            f"\n\n✨ **3D点云生成完成！**\n\n"
+                            f"📸 源图片ID: `{pointcloud_info.get('source_image_id')}`\n"
+                            f"🎯 点云ID: `{pointcloud_id}`\n"
+                            f"📊 点数: {pointcloud_info.get('point_count', 'N/A'):,}\n"
+                            f"📁 文件大小: {pointcloud_info.get('file_size', 0) / 1024:.1f} KB\n"
+                            f"💾 **下载链接**: [{download_url}]({download_url})\n\n"
+                            f"点击下载链接获取PLY文件，您可以使用3D建模软件打开查看！"
+                        )
 
                     # 更新会话历史
                     if session_id:
@@ -929,9 +996,9 @@ class AgentService:
                                 "timestamp": datetime.now(),
                                 "event": "pointcloud_completed",
                                 "pointcloud_id": pointcloud_id,
-                                "view_url": view_url
+                                "view_url": view_url if view_url else None
                             })
-                            logger.info(f"[Agent] 会话已更新，点云完成事件已添加: {session_id}")
+                            logger.info(f"[Agent] ✓ 会话已更新，点云完成事件已添加: {session_id}")
             else:
                 # 超时或失败
                 logger.info(f"[Agent] 点云生成未能在预期时间内完成: {pointcloud_id}")
@@ -979,7 +1046,11 @@ class AgentService:
         """
         pointcloud_keywords = [
             "3d点云", "3d模型", "点云生成", "生成3d", "转成3d", "制作3d",
-            "3d效果", "点云模型", "三维", "立体", "3d预览"
+            "3d效果", "点云模型", "三维", "立体", "3d预览",
+            # 添加更多变体
+            "变成3d", "转为3d", "转换成3d", "转3d", "变3d",
+            "生成点云", "创建3d", "3d化", "3d点云模型",
+            "3d渲染", "3d可视化", "3d展示"
         ]
 
         query_lower = query.lower()
