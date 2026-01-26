@@ -188,7 +188,14 @@ class AgentService:
                         "- Be conversational and helpful.\n"
                         "- When you find photos, mention how many you found and briefly describe them.\n"
                         "- When you don't find photos, suggest alternative search strategies.\n"
-                        "- Always provide the actual search results when available."
+                        "- Always provide the actual search results when available.\n"
+                        "\n"
+                        "IMPORTANT - INCLUDE IMAGE LINKS IN RESPONSE:\n"
+                        "- When you find photos, you MUST include Markdown image links in your response.\n"
+                        "- Format: ![image description](/api/v1/storage/images/{image_id})\n"
+                        "- Include the image_id from the tool result in the URL.\n"
+                        "- This allows the frontend to display image previews.\n"
+                        "- Example: ![柴犬照片](/api/v1/storage/images/308385fb-1792-4e49-93c3-55c8d4ed5eae)"
                     )
                 }
             ]
@@ -746,6 +753,7 @@ class AgentService:
                                 "id": image_id,
                                 "preview_url": url,
                                 "alt_text": alt_text,
+                                "score": 1.0,
                                 "metadata": image_info
                             })
                             continue
@@ -758,6 +766,7 @@ class AgentService:
                     "id": image_id,
                     "preview_url": url,
                     "alt_text": alt_text,
+                    "score": 1.0,
                     "metadata": None
                 })
         
