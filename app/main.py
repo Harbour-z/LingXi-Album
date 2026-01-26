@@ -19,6 +19,7 @@ from .services import (
     get_search_service,
     get_image_recommendation_service,
     get_image_edit_service,
+    get_pointcloud_service,
 )
 from .routers import (
     embedding_router,
@@ -29,6 +30,7 @@ from .routers import (
     social_router,
     image_recommendation_router,
     image_edit_router,
+    pointcloud_router,
 )
 from .models import SystemStatus
 
@@ -108,6 +110,14 @@ async def lifespan(app: FastAPI):
     logger.info("初始化图片编辑服务...")
     image_edit_service = get_image_edit_service()
     image_edit_service.initialize()
+
+    # 初始化点云生成服务
+    logger.info("初始化点云生成服务...")
+    pointcloud_service = get_pointcloud_service()
+    pointcloud_service.initialize(
+        service_url=settings.POINTCLOUD_SERVICE_URL,
+        timeout=settings.POINTCLOUD_SERVICE_TIMEOUT
+    )
 
     logger.info("="*50)
     logger.info("所有服务初始化完成!")
@@ -189,6 +199,7 @@ def create_app() -> FastAPI:
     app.include_router(social_router, prefix=api_prefix)
     app.include_router(image_recommendation_router, prefix=api_prefix)
     app.include_router(image_edit_router, prefix=api_prefix)
+    app.include_router(pointcloud_router, prefix=api_prefix)
 
     # 全局异常处理
     @app.exception_handler(Exception)

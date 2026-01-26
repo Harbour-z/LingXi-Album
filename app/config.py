@@ -61,6 +61,12 @@ class Settings(BaseSettings):
     LLM_SSL_VERIFY: bool = False
     LLM_SSL_CERT: Optional[str] = None
 
+    # 3DGS点云生成服务配置
+    # ML-Sharp API 服务器默认运行在 localhost:5000
+    POINTCLOUD_SERVICE_URL: str = "http://localhost:5000"
+    POINTCLOUD_SERVICE_TIMEOUT: int = 300  # 5分钟超时
+    POINTCLOUD_STORAGE_PATH: str = str(Path(__file__).parent.parent / "storage" / "pointclouds")
+
     # Multi-modal Visual Understanding Model Configuration
     # Supports numeric suffixes for multiple instances (e.g. VISION_MODEL_1_*)
     VISION_MODEL_NAME: str = "qwen3-vl-plus"
@@ -89,6 +95,10 @@ def get_settings() -> Settings:
     """获取缓存的配置实例"""
     return Settings()
 
+@lru_cache()
+def get_settings() -> Settings:
+    """获取缓存的配置实例"""
+    return Settings()
 
 # 确保必要目录存在
 def ensure_directories():
@@ -103,3 +113,7 @@ def ensure_directories():
     if settings.QDRANT_MODE == "local":
         qdrant_path = Path(settings.QDRANT_PATH)
         qdrant_path.mkdir(parents=True, exist_ok=True)
+    
+    # 创建点云存储目录
+    pointcloud_path = Path(settings.POINTCLOUD_STORAGE_PATH)
+    pointcloud_path.mkdir(parents=True, exist_ok=True)

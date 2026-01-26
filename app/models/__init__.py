@@ -43,6 +43,12 @@ from .schemas import (
     EditedImageInfo,
     ImageEditResponse,
     ImageEditResult,
+    # 点云生成
+    PointCloudGenerationStatus,
+    PointCloudRequest,
+    PointCloudResult,
+    PointCloudResponse,
+    PointCloudListResponse,
 )
 
 __all__ = [
@@ -77,4 +83,9 @@ __all__ = [
     "EditedImageInfo",
     "ImageEditResponse",
     "ImageEditResult",
+    "PointCloudGenerationStatus",
+    "PointCloudRequest",
+    "PointCloudResult",
+    "PointCloudResponse",
+    "PointCloudListResponse",
 ]

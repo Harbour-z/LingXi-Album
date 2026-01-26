@@ -185,6 +185,15 @@ class AgentService:
                         "- When editing images, you MUST first search for the image to get its ID, then call edit_image with the image_id and appropriate prompt.\n"
                         "- The edit_image tool automatically enables intelligent prompt extension to optimize simple descriptions.\n"
                         "- After editing, display the generated images using Markdown format: ![edited image](/api/v1/storage/images/{image_id}).\n"
+                        "\n"
+                        "3D POINT CLOUD GENERATION:\n"
+                        "- Use generate_pointcloud when user wants to generate 3D models or point clouds from photos.\n"
+                        "- This tool converts 2D photos into 3DGS point cloud (PLY format) for 3D visualization and modeling.\n"
+                        "- Common trigger phrases: '生成3D点云', '转成3D', '制作3D模型', '查看3D效果', '生成点云模型'.\n"
+                        "- When generating point clouds, you MUST first search for the image to get its ID, then call generate_pointcloud with the image_id.\n"
+                        "- Quality options: 'balanced' for high quality (recommended), 'fast' for faster generation.\n"
+                        "- The tool supports async mode (recommended) which returns immediately with a task ID, avoiding long wait times.\n"
+                        "- The response includes download_url for the PLY file and view_url for 3D browser preview.\n"
                         
                         "ERROR HANDLING:\n"
                         "- If a tool call fails, try to understand the error and provide helpful feedback to the user.\n"
@@ -233,6 +242,7 @@ class AgentService:
         - agent_execute_action: 执行Agent动作（/agent/execute）
         - get_current_time: 获取当前时间（/agent/time）
         - get_photo_meta_schema: 获取元数据字段定义（/agent/meta/schema）
+        - generate_pointcloud: 3D点云生成（/pointcloud/generate）
         """
         settings = get_settings()
         
@@ -615,6 +625,37 @@ class AgentService:
         )
         self._tools.append(tool_edit_image)
 
+        tool_generate_pointcloud = RestfulApi(
+            name="generate_pointcloud",
+            description="3D点云生成工具。将图片转换为3DGS点云(PLY格式)。当用户要求生成3D模型、生成点云、将图片转换成3D、或想要查看照片的3D效果时使用此工具。例如：'生成3D点云'、'把这张图转成3D'、'制作3D模型'。重要：必须先通过检索工具获取图片ID才能使用此工具。生成过程支持异步模式，推荐使用异步模式以避免长时间等待。",
+            params=[
+                Param(name="image_id", description="来源图片ID（必须先通过检索工具获取）", param_type="string", required=True, method="Body"),
+                Param(name="quality", description="生成质量：'balanced'（高质量）或 'fast'（快速模式）", param_type="string", required=False, default_value="balanced", method="Body"),
+                Param(name="async_mode", description="是否异步生成（推荐true，立即返回任务ID）", param_type="boolean", required=False, default_value=True, method="Body")
+            ],
+            path=f"{api_base}{api_prefix}/pointcloud/generate",
+            headers={"Content-Type": "application/json"},
+            method="POST",
+            response=[
+                Param(name="status", description="响应状态", param_type="string"),
+                Param(name="message", description="响应消息", param_type="string"),
+                Param(name="data", description="点云生成结果", param_type="object", schema=[
+                    Param(name="pointcloud_id", description="点云ID", param_type="string"),
+                    Param(name="status", description="生成状态（pending/processing/completed/failed）", param_type="string"),
+                    Param(name="source_image_id", description="来源图片ID", param_type="string"),
+                    Param(name="file_path", description="PLY文件路径", param_type="string"),
+                    Param(name="download_url", description="下载URL", param_type="string"),
+                    Param(name="view_url", description="3D预览URL（浏览器可直接查看）", param_type="string"),
+                    Param(name="created_at", description="创建时间", param_type="string"),
+                    Param(name="completed_at", description="完成时间", param_type="string"),
+                    Param(name="file_size", description="文件大小(bytes)", param_type="integer"),
+                    Param(name="point_count", description="点云点数", param_type="integer"),
+                    Param(name="error_message", description="错误信息", param_type="string")
+                ])
+            ]
+        )
+        self._tools.append(tool_generate_pointcloud)
+
     @property
     def is_initialized(self) -> bool:
         return self._initialized
@@ -735,10 +776,23 @@ class AgentService:
                     f"备选数量={len(recommendation['alternative_image_ids'])}"
                 )
 
+            # 检测是否为点云生成请求，启动后台监控
+            pointcloud_id = None
+            if self._detect_pointcloud_generation(query):
+                pointcloud_id = self._extract_pointcloud_id_from_response(response)
+                if pointcloud_id:
+                    logger.info(f"[Agent] 检测到点云生成任务，启动后台监控: {pointcloud_id}")
+                    # 启动后台监控任务（不阻塞主响应）
+                    asyncio.create_task(self._monitor_and_update_pointcloud(
+                        pointcloud_id=pointcloud_id,
+                        session_id=session_id
+                    ))
+
             return {
                 "answer": response,
                 "images": images,
-                "recommendation": recommendation if has_recommendation else None
+                "recommendation": recommendation if has_recommendation else None,
+                "pointcloud_id": pointcloud_id  # 返回点云ID供前端使用
             }
         except Exception as e:
             logger.error(f"[Agent] 执行异常: {e}", exc_info=True)
@@ -768,6 +822,168 @@ class AgentService:
                 "content": response,
                 "timestamp": datetime.now()
             })
+
+    async def _monitor_pointcloud_generation(
+        self,
+        pointcloud_id: str,
+        max_wait_seconds: int = 120
+    ) -> Optional[str]:
+        """
+        监控点云生成状态，等待预览链接
+
+        Args:
+            pointcloud_id: 点云ID
+            max_wait_seconds: 最大等待时间（秒），默认2分钟
+
+        Returns:
+            预览URL，如果超时或失败则返回None
+        """
+        from ..services import get_pointcloud_service
+        pointcloud_svc = get_pointcloud_service()
+
+        if not pointcloud_svc.is_initialized:
+            logger.warning("点云服务未初始化，无法监控")
+            return None
+
+        logger.info(f"[Agent] 开始监控点云生成任务: {pointcloud_id}, 最大等待时间: {max_wait_seconds}秒")
+
+        poll_interval = 5  # 每5秒轮询一次
+        elapsed_time = 0
+
+        while elapsed_time < max_wait_seconds:
+            try:
+                pointcloud_info = pointcloud_svc.get_pointcloud(pointcloud_id)
+
+                if not pointcloud_info:
+                    logger.warning(f"[Agent] 点云信息不存在: {pointcloud_id}")
+                    return None
+
+                status = pointcloud_info.get("status")
+                view_url = pointcloud_info.get("view_url")
+
+                logger.debug(f"[Agent] 点云状态: {status}, view_url: {view_url}, 已等待: {elapsed_time}秒")
+
+                if status == "completed" and view_url:
+                    logger.info(f"[Agent] 点云生成完成，预览URL: {view_url}")
+                    return view_url
+                elif status == "failed":
+                    error_msg = pointcloud_info.get("error_message", "未知错误")
+                    logger.error(f"[Agent] 点云生成失败: {error_msg}")
+                    return None
+
+                await asyncio.sleep(poll_interval)
+                elapsed_time += poll_interval
+
+            except Exception as e:
+                logger.error(f"[Agent] 监控点云状态异常: {e}", exc_info=True)
+                await asyncio.sleep(poll_interval)
+                elapsed_time += poll_interval
+
+        logger.warning(f"[Agent] 点云生成超时（{max_wait_seconds}秒），任务ID: {pointcloud_id}")
+        return None
+
+    async def _monitor_and_update_pointcloud(
+        self,
+        pointcloud_id: str,
+        session_id: Optional[str] = None
+    ) -> None:
+        """
+        后台监控点云生成并更新会话信息
+
+        Args:
+            pointcloud_id: 点云ID
+            session_id: 会话ID（可选）
+        """
+        try:
+            logger.info(f"[Agent] 后台监控点云任务开始: {pointcloud_id}")
+
+            # 监控点云生成状态
+            view_url = await self._monitor_pointcloud_generation(pointcloud_id)
+
+            if view_url:
+                # 获取点云详细信息
+                from ..services import get_pointcloud_service
+                pointcloud_svc = get_pointcloud_service()
+                pointcloud_info = pointcloud_svc.get_pointcloud(pointcloud_id)
+
+                if pointcloud_info:
+                    # 构造更新消息
+                    update_message = (
+                        f"\n\n✨ **3D点云生成完成！**\n\n"
+                        f"📸 源图片ID: `{pointcloud_info.get('source_image_id')}`\n"
+                        f"🎯 点云ID: `{pointcloud_id}`\n"
+                        f"📊 点数: {pointcloud_info.get('point_count', 'N/A'):,}\n"
+                        f"📁 文件大小: {pointcloud_info.get('file_size', 0) / 1024:.1f} KB\n"
+                        f"🔗 **预览链接**: [{view_url}]({view_url})\n\n"
+                        f"点击上方链接即可在浏览器中查看3D模型！"
+                    )
+
+                    # 更新会话历史
+                    if session_id:
+                        session = self.get_session(session_id)
+                        if session:
+                            # 添加系统更新消息
+                            session["history"].append({
+                                "role": "system",
+                                "content": update_message,
+                                "timestamp": datetime.now(),
+                                "event": "pointcloud_completed",
+                                "pointcloud_id": pointcloud_id,
+                                "view_url": view_url
+                            })
+                            logger.info(f"[Agent] 会话已更新，点云完成事件已添加: {session_id}")
+            else:
+                # 超时或失败
+                logger.info(f"[Agent] 点云生成未能在预期时间内完成: {pointcloud_id}")
+
+        except Exception as e:
+            logger.error(f"[Agent] 后台监控点云任务异常: {e}", exc_info=True)
+
+    def _extract_pointcloud_id_from_response(self, response: str) -> Optional[str]:
+        """
+        从Agent回复中提取点云ID
+
+        Args:
+            response: Agent生成的回复文本
+
+        Returns:
+            点云ID，如果未找到则返回None
+        """
+        import re
+
+        patterns = [
+            r'点云ID[:\s]*([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})',
+            r'pointcloud_id[:\s]*([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})',
+            r'任务ID[:\s]*([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})',
+            r'([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})'  # 直接匹配UUID格式
+        ]
+
+        for pattern in patterns:
+            matches = re.findall(pattern, response, re.IGNORECASE)
+            if matches:
+                pointcloud_id = matches[0].lower()
+                logger.info(f"[Agent] 从回复中提取到点云ID: {pointcloud_id}")
+                return pointcloud_id
+
+        return None
+
+    def _detect_pointcloud_generation(self, query: str) -> bool:
+        """
+        检测用户请求是否为点云生成
+
+        Args:
+            query: 用户查询
+
+        Returns:
+            是否为点云生成请求
+        """
+        pointcloud_keywords = [
+            "3d点云", "3d模型", "点云生成", "生成3d", "转成3d", "制作3d",
+            "3d效果", "点云模型", "三维", "立体", "3d预览"
+        ]
+
+        query_lower = query.lower()
+        return any(keyword in query_lower for keyword in pointcloud_keywords)
 
     def _extract_images_from_response(self, response: str) -> List[Dict[str, Any]]:
         """

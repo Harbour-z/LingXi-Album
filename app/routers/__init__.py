@@ -10,6 +10,7 @@ from .agent import router as agent_router
 from .social import router as social_router
 from .image_recommendation import router as image_recommendation_router
 from .image_edit import router as image_edit_router
+from .pointcloud import router as pointcloud_router
 
 __all__ = [
     "embedding_router",
@@ -20,4 +21,5 @@ __all__ = [
     "social_router",
     "image_recommendation_router",
     "image_edit_router",
+    "pointcloud_router",
 ]

@@ -473,6 +473,7 @@ class ChatResponse(BaseModel):
     results: Optional[Dict[str, Any]] = Field(None, description="搜索结果")
     suggestions: List[str] = Field(default_factory=list, description="后续建议")
     recommendation: Optional[ImageRecommendation] = Field(None, description="图片推荐信息")
+    pointcloud_id: Optional[str] = Field(None, description="点云任务ID（如果有）")
     timestamp: str = Field(..., description="响应时间戳")
 
 
@@ -547,11 +548,12 @@ async def agent_chat(
             chat_response = ChatResponse(
                 session_id=session_id,
                 answer=response,
-                intent="auto", # 由Agent自动决策
+                intent="auto",
                 optimized_query=message.query,
                 results={"total": len(images), "images": images} if len(images) > 0 else None,
                 suggestions=[],
                 recommendation=recommendation,
+                pointcloud_id=agent_result.get("pointcloud_id"),
                 timestamp=datetime.now().isoformat()
             )
             
@@ -692,6 +694,34 @@ async def get_session_info(
             "history_count": len(session.get("history", [])),
             "context": session.get("context", {})
         }
+    }
+
+
+@router.get(
+    "/session/{session_id}/events",
+    summary="获取会话系统事件",
+    description="获取指定会话中的系统事件（如点云生成完成等）"
+)
+async def get_session_events(
+    session_id: str,
+    agent_svc: AgentService = Depends(get_agent_service)
+):
+    """获取会话系统事件"""
+    session = agent_svc.get_session(session_id)
+
+    if not session:
+        raise HTTPException(status_code=404, detail=f"会话不存在: {session_id}")
+
+    # 从历史记录中提取系统事件
+    events = [
+        msg for msg in session.get("history", [])
+        if msg.get("role") == "system" and msg.get("event")
+    ]
+
+    return {
+        "status": "success",
+        "events": events,
+        "count": len(events)
     }
 
 

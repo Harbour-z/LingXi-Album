@@ -296,3 +296,45 @@ class ImageEditResult(BaseModel):
     total_generated: int = Field(0, description="生成的图片总数")
     total_saved: int = Field(0, description="成功保存的图片数量")
     edit_result: Dict[str, Any] = Field(default_factory=dict, description="原始编辑结果")
+
+# ==================== 3DGS点云生成相关模型 ====================
+
+class PointCloudGenerationStatus(str, Enum):
+    """点云生成状态"""
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class PointCloudRequest(BaseModel):
+    """点云生成请求"""
+    image_id: str = Field(..., description="来源图片ID")
+    quality: str = Field("balanced", description="生成质量: balanced(高质量) 或 fast(快速模式)")
+    async_mode: bool = Field(True, description="是否异步生成")
+
+
+class PointCloudResult(BaseModel):
+    """点云生成结果"""
+    pointcloud_id: str = Field(..., description="点云ID")
+    status: PointCloudGenerationStatus = Field(..., description="生成状态")
+    source_image_id: str = Field(..., description="来源图片ID")
+    file_path: Optional[str] = Field(None, description="PLY文件路径")
+    download_url: Optional[str] = Field(None, description="下载URL")
+    view_url: Optional[str] = Field(None, description="浏览器预览URL（3DGS服务提供）")
+    created_at: datetime = Field(default_factory=datetime.now, description="创建时间")
+    completed_at: Optional[datetime] = Field(None, description="完成时间")
+    error_message: Optional[str] = Field(None, description="错误信息")
+    file_size: Optional[int] = Field(None, description="文件大小(bytes)")
+    point_count: Optional[int] = Field(None, description="点云点数")
+
+
+class PointCloudResponse(BaseResponse):
+    """点云生成响应"""
+    data: Optional[PointCloudResult] = None
+
+
+class PointCloudListResponse(BaseResponse):
+    """点云列表响应"""
+    data: Optional[List[PointCloudResult]] = None
+    total: int = Field(0, description="总数")
