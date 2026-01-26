@@ -1,0 +1,10 @@
+# 向量索引重建脚本依赖
+
+# 核心依赖
+httpx>=0.24.0
+Pillow>=10.0.0
+
+# 测试依赖
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0

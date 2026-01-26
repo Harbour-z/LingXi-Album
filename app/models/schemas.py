@@ -218,3 +218,31 @@ class SystemStatus(BaseModel):
     storage_available: bool = Field(..., description="存储是否可用")
     total_images: int = Field(0, description="图片总数")
     total_vectors: int = Field(0, description="向量总数")
+
+
+# ==================== 图片推荐模型 ====================
+
+class ImageRecommendation(BaseModel):
+    """图片推荐结果"""
+    recommended_image_id: Optional[str] = Field(None, description="推荐的最佳图片ID")
+    alternative_image_ids: List[str] = Field(default_factory=list, description="其他未被推荐的图片ID列表")
+    recommendation_reason: str = Field(..., description="推荐理由文本")
+    user_prompt_for_deletion: bool = Field(False, description="是否提示用户删除其他图片")
+    total_images_analyzed: int = Field(0, description="分析的图片总数")
+
+
+# ==================== 删除确认模型 ====================
+
+class DeleteConfirmationRequest(BaseModel):
+    """删除确认请求"""
+    image_ids: List[str] = Field(..., description="要删除的图片ID列表")
+    confirmed: bool = Field(True, description="用户是否确认删除")
+    reason: Optional[str] = Field(None, description="删除原因")
+
+
+class DeleteConfirmationResponse(BaseModel):
+    """删除确认响应"""
+    deleted_count: int = Field(0, description="已删除的图片数量")
+    failed_count: int = Field(0, description="删除失败的图片数量")
+    deleted_image_ids: List[str] = Field(default_factory=list, description="成功删除的图片ID列表")
+    failed_image_ids: List[str] = Field(default_factory=list, description="删除失败的图片ID列表")

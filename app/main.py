@@ -17,6 +17,7 @@ from .services import (
     get_vector_db_service,
     get_storage_service,
     get_search_service,
+    get_image_recommendation_service,
 )
 from .routers import (
     embedding_router,
@@ -24,6 +25,8 @@ from .routers import (
     search_router,
     storage_router,
     agent_router,
+    social_router,
+    image_recommendation_router,
 )
 from .models import SystemStatus
 
@@ -77,26 +80,27 @@ async def lifespan(app: FastAPI):
     try:
         # 构建设备字符串，只有在CUDA可用时才应用CUDA设备号
         device = None
-        if torch.cuda.is_available():
+        if settings.EMBEDDING_API_PROVIDER == "local" and torch.cuda.is_available():
             device = f"cuda:{settings.CUDA_DEVICE}"
 
         embedding_service.initialize(
             model_path=settings.MODEL_PATH,
-            max_length=settings.MAX_LENGTH,
-            min_pixels=settings.MIN_PIXELS,
-            max_pixels=settings.MAX_PIXELS,
-            default_instruction=settings.DEFAULT_INSTRUCTION,
             device=device
         )
-        logger.info(f"Embedding模型加载成功 (Device: {device or 'Auto'})")
+        logger.info(f"Embedding服务初始化成功 (Provider: {settings.EMBEDDING_API_PROVIDER}, Device: {device or 'Auto'})")
     except Exception as e:
-        logger.warning(f"Embedding模型加载失败: {e}")
+        logger.warning(f"Embedding服务初始化失败: {e}")
         logger.warning("系统将在没有Embedding服务的情况下运行")
 
     # 初始化搜索服务
     logger.info("初始化搜索服务...")
     search_service = get_search_service()
     search_service.initialize()
+    
+    # 初始化图片推荐服务
+    logger.info("初始化图片推荐服务...")
+    image_recommendation_service = get_image_recommendation_service()
+    image_recommendation_service.initialize(settings)
 
     logger.info("="*50)
     logger.info("所有服务初始化完成!")
@@ -171,6 +175,8 @@ def create_app() -> FastAPI:
     app.include_router(search_router, prefix=api_prefix)
     app.include_router(storage_router, prefix=api_prefix)
     app.include_router(agent_router, prefix=api_prefix)
+    app.include_router(social_router, prefix=api_prefix)
+    app.include_router(image_recommendation_router, prefix=api_prefix)
 
     # 全局异常处理
     @app.exception_handler(Exception)
