@@ -41,6 +41,11 @@ const MainLayout: React.FC = () => {
       label: '智能对话',
     },
     {
+      key: '/conversations',
+      icon: <ProjectOutlined />,
+      label: '对话历史',
+    },
+    {
       key: '/gallery',
       icon: <PictureOutlined />,
       label: '图片画廊',
@@ -49,6 +54,11 @@ const MainLayout: React.FC = () => {
       key: '/upload',
       icon: <CloudUploadOutlined />,
       label: '上传图片',
+    },
+    {
+      key: '/markdown-test',
+      icon: <BulbOutlined />,
+      label: 'Markdown测试',
     },
   ];
 
