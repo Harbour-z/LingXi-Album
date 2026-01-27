@@ -28,3 +28,7 @@ export async function deleteImagesByRecommendation(
 export async function previewDeleteOperation(imageIds: string[]): Promise<any> {
     return await client.post<any, any>('/agent/recommendation/preview-delete', imageIds);
 }
+
+export async function getSessionEvents(sessionId: string): Promise<any> {
+    return await client.get<any, any>(`/agent/session/${sessionId}/events`);
+}

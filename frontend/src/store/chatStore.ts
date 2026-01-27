@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { sendChatMessage } from '../api/agent';
+import { sendChatMessage, getSessionEvents } from '../api/agent';
 import { getImageUrl } from '../api/storage';
 import type { ChatMessage, ImageResult } from '../api/types';
 
@@ -84,6 +84,9 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                 messages: [...state.messages, agentMessage],
                 isLoading: false,
             }));
+
+            // 发送消息后开始轮询系统事件
+            get().pollSystemEvents();
         } catch (error: unknown) {
             clearTimeout(timeoutId);
             
@@ -110,6 +113,51 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                 error: errorMessage,
                 messages: [...state.messages, errorMessageObj]
             }));
+        }
+    },
+
+    pollSystemEvents: async () => {
+        const { sessionId, messages } = get();
+        if (!sessionId) return;
+
+        try {
+            const response = await getSessionEvents(sessionId);
+            if (response.status === 'success' && response.events && response.events.length > 0) {
+                // 获取已处理的事件ID（避免重复添加）
+                const processedEventIds = new Set(
+                    messages
+                        .filter(msg => msg.eventId)
+                        .map(msg => msg.eventId)
+                );
+
+                // 过滤出新的事件
+                const newEvents = response.events.filter((event: any) => {
+                    const eventId = `${event.timestamp}-${event.pointcloud_id || event.event}`;
+                    return !processedEventIds.has(eventId);
+                });
+
+                if (newEvents.length > 0) {
+                    const newMessages: ChatMessage[] = newEvents.map((event: any) => {
+                        const eventId = `${event.timestamp}-${event.pointcloud_id || event.event}`;
+                        return {
+                            id: crypto.randomUUID(),
+                            type: 'system',
+                            content: event.content,
+                            timestamp: new Date(event.timestamp),
+                            event: event.event,
+                            eventId: eventId,
+                            pointcloudId: event.pointcloud_id,
+                            viewUrl: event.view_url,
+                        };
+                    });
+
+                    set(state => ({
+                        messages: [...state.messages, ...newMessages],
+                    }));
+                }
+            }
+        } catch (error) {
+            console.error('Failed to poll system events:', error);
         }
     },
 
