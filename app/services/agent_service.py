@@ -153,7 +153,7 @@ class AgentService:
             description="Smart Album Agent powered by OpenJiuwen",
             model=model_config,
             constrain=ConstrainConfig(
-                max_iteration=6
+                max_iteration=15
             ),
             prompt_template=[
                 {
