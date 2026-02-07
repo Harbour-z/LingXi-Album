@@ -214,9 +214,8 @@ def create_app() -> FastAPI:
     # 挂载前端静态文件（如果存在）
     frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
     if frontend_dist.exists():
-        # API路由优先，静态文件放在最后
-        app.mount("/", StaticFiles(directory=str(frontend_dist),
-                  html=True), name="frontend")
+        # 挂载静态资源目录（JS、CSS等）
+        app.mount("/assets", StaticFiles(directory=str(frontend_dist / "assets")), name="assets")
         logger.info(f"前端静态文件已挂载: {frontend_dist}")
 
     # 全局异常处理
@@ -254,10 +253,14 @@ def create_app() -> FastAPI:
         response = await call_next(request)
         return response
 
-    # 根路由
-    @app.get("/", tags=["System"])
+    # 根路由 - 优先返回前端页面
+    @app.get("/", tags=["System"], include_in_schema=False)
     async def root():
-        """API根路由，返回基本信息"""
+        """根路由：如果有前端则返回前端页面，否则返回API信息"""
+        frontend_index = Path(__file__).parent.parent / "frontend" / "dist" / "index.html"
+        if frontend_index.exists():
+            from fastapi.responses import FileResponse
+            return FileResponse(frontend_index)
         return {
             "name": settings.APP_NAME,
             "version": settings.APP_VERSION,
@@ -298,6 +301,21 @@ def create_app() -> FastAPI:
             total_images=total_images,
             total_vectors=total_vectors
         )
+
+    # SPA Fallback - 处理前端路由（必须放在所有路由之后）
+    frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
+    if frontend_dist.exists():
+        from fastapi.responses import FileResponse
+        
+        @app.get("/{full_path:path}", include_in_schema=False)
+        async def serve_spa(full_path: str):
+            """SPA Fallback: 所有未匹配的路由返回 index.html"""
+            # 如果请求的是静态文件且存在，返回该文件
+            file_path = frontend_dist / full_path
+            if file_path.is_file():
+                return FileResponse(file_path)
+            # 否则返回 index.html（SPA路由）
+            return FileResponse(frontend_dist / "index.html")
 
     return app
 

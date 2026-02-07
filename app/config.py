@@ -55,8 +55,8 @@ class Settings(BaseSettings):
     AGENT_ENABLED: bool = True
     AGENT_PROVIDER: str = "openai"
     OPENAI_API_KEY: Optional[str] = None
-    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
-    OPENAI_MODEL_NAME: str = "gpt-4o"
+    OPENAI_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"  # 默认阿里云
+    OPENAI_MODEL_NAME: str = "qwen-max"
 
     LLM_SSL_VERIFY: bool = False
     LLM_SSL_CERT: Optional[str] = None

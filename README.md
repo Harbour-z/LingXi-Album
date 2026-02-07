@@ -19,7 +19,60 @@
 
 ## 快速开始
 
-### 1) 后端（FastAPI）
+### 方案一：Docker 部署（推荐）
+
+**最简单的方式**，无需配置 Python 环境，一键启动：
+
+#### 前置要求
+- 安装 [Docker Desktop](https://www.docker.com/products/docker-desktop)
+- 准备阿里云 API Keys（3个）
+
+#### 启动步骤
+
+1. **配置 API Keys**
+```bash
+cp .env.template .env
+vim .env  # 填入以下三个 Key
+```
+
+需要配置：
+- `ALIYUN_EMBEDDING_API_KEY` - 图片向量化
+- `OPENAI_API_KEY` - 智能对话
+- `VISION_MODEL_API_KEY` - 视觉理解
+
+2. **一键启动**
+```bash
+# macOS/Linux
+./start-docker.sh
+
+# Windows
+start-docker.bat
+```
+
+3. **访问应用**
+- 主页: http://localhost:7860
+- API文档: http://localhost:7860/docs
+
+#### 常用命令
+```bash
+docker-compose ps              # 查看状态
+docker-compose logs -f         # 查看日志
+docker-compose restart         # 重启服务
+docker-compose down            # 停止服务
+```
+
+#### 数据持久化
+以下目录会自动挂载，数据不会丢失：
+- `./storage` - 上传的图片
+- `./qdrant_data` - 向量数据库
+
+**详细说明见 [DOCKER.md](DOCKER.md)**
+
+---
+
+### 方案二：本地开发
+
+#### 1) 后端（FastAPI）
 
 #### 环境要求
 
@@ -63,7 +116,7 @@ API 文档：
 
 - Swagger: `http://localhost:8000/docs`
 
-### 2) 前端（React + Vite）
+#### 2) 前端（React + Vite）
 
 ```bash
 cd frontend
@@ -72,6 +125,30 @@ npm run dev
 ```
 
 打开：`http://localhost:5173/`（已配置代理 `/api -> http://localhost:8000`）。
+
+---
+
+## Dockerfile vs Docker Compose
+
+**理解它们的关系：**
+
+| 工具 | 作用 | 类比 |
+|------|------|------|
+| **Dockerfile** | 定义单个镜像的构建步骤 | 单个菜品的菜谱 |
+| **docker-compose.yml** | 编排多个容器协同工作 | 完整的菜单和上菜流程 |
+
+**工作流程：**
+```
+1. Dockerfile → 构建镜像（定义应用环境）
+2. docker-compose → 使用镜像 → 启动服务（配置端口、卷、网络）
+```
+
+**本项目包含：**
+- `Dockerfile.user` - 用户版镜像构建文件
+- `docker-compose.yml` - 服务编排配置
+- `start-docker.sh/.bat` - 一键启动脚本
+
+---
 
 ## 关键用法
 
@@ -111,14 +188,10 @@ python -m unittest -q
 - **OpenAI兼容接口报 400: you must provide a model parameter**：检查 `.env` 的 `OPENAI_MODEL_NAME` 是否为空。
 - **对话/检索提示网络错误但后端有日志**：通常是前端超时取消（已在聊天请求中将超时适配为更长时间）。
 
-## 比赛提交文档
-
-比赛用产品介绍与技术方案在：`比赛提交/智慧相册队+智慧相册Agent/`。
-
 ## TODO LIST
-[] 完善以图搜图功能，支持用户上传图片后，根据图片内容检索出相关图片；
-[] 图像生成模型加入 pipeline，实现动漫风格生成；
-[] 前端加入图像生成功能，用户上传图片后，生成动漫风格图片并索引；
-[] 朋友圈文案生成功能，搜索出相关图片后，根据图片内容生成符合要求的文案；
-[] 3dgs 模型加入 pipeline，实现 3d 模型生成；
-[] 图像编辑功能，qwen3-image-edit 模型加入 pipeline，实现图像编辑功能；
+[x] 完善以图搜图功能，支持用户上传图片后，根据图片内容检索出相关图片；
+[x] 图像生成模型加入 pipeline，实现动漫风格生成；
+[x] 前端加入图像生成功能，用户上传图片后，生成动漫风格图片并索引；
+[x] 朋友圈文案生成功能，搜索出相关图片后，根据图片内容生成符合要求的文案；
+[x] 3dgs 模型加入 pipeline，实现 3d 模型生成；
+[x] 图像编辑功能，qwen3-image-edit 模型加入 pipeline，实现图像编辑功能；

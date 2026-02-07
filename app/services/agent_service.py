@@ -272,7 +272,7 @@ class AgentService:
 
         # 从配置中读取 API 基础 URL，支持环境变量覆盖
         # 使用 127.0.0.1 代替 localhost，避免 OpenJiuwen 的 URL 验证问题
-        api_base = os.getenv("AGENT_API_BASE_URL", "http://127.0.0.1:8000")
+        api_base = os.getenv("AGENT_API_BASE_URL", "http://127.0.0.1:7860")
         api_prefix = "/api/v1"
 
         logger.info(f"Agent工具注册，API基础URL: {api_base}")
