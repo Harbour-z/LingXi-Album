@@ -4,12 +4,13 @@
 """
 
 import logging
-import torch
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from .config import get_settings, ensure_directories
 from .services import (
@@ -85,14 +86,21 @@ async def lifespan(app: FastAPI):
     try:
         # 构建设备字符串，只有在CUDA可用时才应用CUDA设备号
         device = None
-        if settings.EMBEDDING_API_PROVIDER == "local" and torch.cuda.is_available():
-            device = f"cuda:{settings.CUDA_DEVICE}"
+        if settings.EMBEDDING_API_PROVIDER == "local":
+            # 本地模式需要torch检查CUDA
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    device = f"cuda:{settings.CUDA_DEVICE}"
+            except ImportError:
+                logger.warning("torch未安装，使用CPU模式")
 
         embedding_service.initialize(
             model_path=settings.MODEL_PATH,
             device=device
         )
-        logger.info(f"Embedding服务初始化成功 (Provider: {settings.EMBEDDING_API_PROVIDER}, Device: {device or 'Auto'})")
+        logger.info(
+            f"Embedding服务初始化成功 (Provider: {settings.EMBEDDING_API_PROVIDER}, Device: {device or 'Auto'})")
     except Exception as e:
         logger.warning(f"Embedding服务初始化失败: {e}")
         logger.warning("系统将在没有Embedding服务的情况下运行")
@@ -101,7 +109,7 @@ async def lifespan(app: FastAPI):
     logger.info("初始化搜索服务...")
     search_service = get_search_service()
     search_service.initialize()
-    
+
     # 初始化图片推荐服务
     logger.info("初始化图片推荐服务...")
     image_recommendation_service = get_image_recommendation_service()
@@ -203,6 +211,14 @@ def create_app() -> FastAPI:
     app.include_router(pointcloud_router, prefix=api_prefix)
     app.include_router(knowledge_qa_router, prefix=api_prefix)
 
+    # 挂载前端静态文件（如果存在）
+    frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
+    if frontend_dist.exists():
+        # API路由优先，静态文件放在最后
+        app.mount("/", StaticFiles(directory=str(frontend_dist),
+                  html=True), name="frontend")
+        logger.info(f"前端静态文件已挂载: {frontend_dist}")
+
     # 全局异常处理
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):
@@ -215,7 +231,7 @@ def create_app() -> FastAPI:
                 "detail": "服务器内部错误"
             }
         )
-    
+
     # 请求日志中间件 - 用于调试推荐工具的参数传递
     @app.middleware("http")
     async def log_requests(request: Request, call_next):
@@ -224,16 +240,17 @@ def create_app() -> FastAPI:
             import json
             import io
             from fastapi.concurrency import iterate_in_threadpool
-            
+
             # 读取请求体
             body = await request.body()
-            
+
             logger.info(f"[Middleware] 捕获到图片推荐请求")
             logger.info(f"[Middleware] URL: {request.url.path}")
             logger.info(f"[Middleware] Method: {request.method}")
-            logger.info(f"[Middleware] Content-Type: {request.headers.get('content-type')}")
+            logger.info(
+                f"[Middleware] Content-Type: {request.headers.get('content-type')}")
             logger.info(f"[Middleware] Body: {body.decode('utf-8')}")
-        
+
         response = await call_next(request)
         return response
 
@@ -294,6 +311,6 @@ if __name__ == "__main__":
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
-        port=8000,
+        port=7860,
         reload=True
     )

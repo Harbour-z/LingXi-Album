@@ -222,8 +222,8 @@ error.log
 # Alembic migration files
 alembic/
 
-# Docker
-Dockerfile*
+# Docker (Dockerfile is needed for ModelScope deployment)
+# Dockerfile*
 docker-compose*
 
 # Environment specific settings

@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     DEFAULT_INSTRUCTION: str = "Represent the user's input."
 
     # Embedding Service Configuration (API-based)
-    EMBEDDING_API_PROVIDER: str = "local"  # Options: local, aliyun
+    EMBEDDING_API_PROVIDER: str = "aliyun"  # Options: local, aliyun
     ALIYUN_EMBEDDING_API_KEY: Optional[str] = None
     ALIYUN_EMBEDDING_BASE_URL: Optional[str] = None  # DashScope SDK 不需要
     ALIYUN_EMBEDDING_MODEL_NAME: str = "qwen3-vl-embedding"

@@ -7,9 +7,7 @@ pydantic-settings>=2.1.0
 # Vector Database
 qdrant-client>=1.7.0
 
-# Deep Learning
-torch>=2.0.0
-transformers>=4.40.0
+# Image Processing
 pillow>=10.0.0
 numpy>=1.24.0
 
@@ -23,4 +21,17 @@ httpx>=0.25.0
 python-multipart>=0.0.6
 aiofiles>=23.2.0
 
+# Agent Framework
 openjiuwen>=0.1.3
+
+# OpenJiuwen dependencies
+openai>=1.0.0
+tiktoken>=0.5.0
+chromadb>=0.4.0
+pymilvus>=2.3.0
+
+# Aliyun DashScope SDK
+dashscope>=1.20.0
+
+# Retry mechanism
+tenacity>=8.0.0
