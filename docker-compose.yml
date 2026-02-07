@@ -1,0 +1,49 @@
+version: "3.8"
+
+services:
+  smart-album:
+    build:
+      context: .
+      dockerfile: Dockerfile.user
+    container_name: smart-album
+    ports:
+      - "7860:7860"
+    environment:
+      # Embedding API 配置（必填）
+      - EMBEDDING_API_PROVIDER=aliyun
+      - ALIYUN_EMBEDDING_API_KEY=${ALIYUN_EMBEDDING_API_KEY}
+      - ALIYUN_EMBEDDING_MODEL_NAME=qwen3-vl-embedding
+      - ALIYUN_EMBEDDING_DIMENSION=2560
+
+      # Agent API 配置（必填）
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+      - OPENAI_MODEL_NAME=qwen-max
+
+      # Vision Model 配置（必填）
+      - VISION_MODEL_NAME=qwen3-vl-plus
+      - VISION_MODEL_API_KEY=${VISION_MODEL_API_KEY}
+      - VISION_MODEL_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+
+      # 数据库配置
+      - QDRANT_MODE=local
+
+      # SSL配置
+      - LLM_SSL_VERIFY=false
+    volumes:
+      # 持久化存储
+      - ./storage:/app/storage
+      - ./qdrant_data:/app/qdrant_data
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:7860/health')",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
