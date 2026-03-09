@@ -2,56 +2,56 @@
 @import "./styles/markdown.css";
 
 :root {
-  /* Primary Colors - 增强饱和度+15%，深度+10% */
-  --primary: 246 92% 65%;
-  --primary-light: 246 95% 75%;
-  --primary-dark: 246 88% 55%;
+  /* Primary Colors - 砂岩金暖色调 */
+  --primary: 45 65% 58%;
+  --primary-light: 45 70% 70%;
+  --primary-dark: 38 60% 48%;
   --primary-foreground: 0 0% 100%;
   
-  /* Accent Colors - 增强 */
-  --accent: 199 94% 55%;
-  --accent-light: 199 94% 68%;
-  --accent-secondary: 280 94% 65%;
+  /* Accent Colors - 古铜金/青铜色 */
+  --accent: 195 55% 52%;
+  --accent-light: 195 60% 65%;
+  --accent-secondary: 165 50% 45%;
   
-  /* Background */
-  --background: 240 10% 99%;
-  --background-secondary: 240 8% 96%;
-  --background-tertiary: 240 8% 93%;
+  /* Background - 温暖的中性色 */
+  --background: 45 8% 97%;
+  --background-secondary: 45 6% 95%;
+  --background-tertiary: 45 5% 92%;
   
-  /* Gradient Backgrounds */
-  --bg-gradient-light: linear-gradient(90deg, #f5f7fa 0%, #e4e7eb 100%);
-  --bg-gradient-dark: linear-gradient(90deg, #141414 0%, #000000 100%);
+  /* Gradient Backgrounds - 温暖的渐变 */
+  --bg-gradient-light: linear-gradient(90deg, #faf9f7 0%, #f5f2ef 100%);
+  --bg-gradient-dark: linear-gradient(90deg, #1a1a1a 0%, #0d0d0d 100%);
   
-  /* Foreground */
-  --foreground: 240 10% 8%;
-  --foreground-muted: 240 5% 40%;
-  --foreground-subtle: 240 5% 60%;
+  /* Foreground - 深炭灰色 */
+  --foreground: 45 12% 15%;
+  --foreground-muted: 45 6% 45%;
+  --foreground-subtle: 45 5% 60%;
   
-  /* Border */
-  --border: 240 5% 88%;
-  --border-hover: 240 5% 78%;
+  /* Border - 柔和的边界 */
+  --border: 45 8% 85%;
+  --border-hover: 45 6% 75%;
   
-  /* Surface */
-  --surface: 0 0% 100%;
-  --surface-hover: 240 5% 97%;
+  /* Surface - 白色表面 */
+  --surface: 45 10% 100%;
+  --surface-hover: 45 6% 98%;
 
-  /* Success/Error/Warning */
-  --success: 142 76% 42%;
-  --error: 0 84% 60%;
-  --warning: 38 92% 50%;
+  /* Success/Error/Warning - 调整色调保持和谐 */
+  --success: 155 55% 42%;
+  --error: 5 65% 58%;
+  --warning: 35 85% 52%;
   
-  /* Shadows */
-  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.06);
-  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.06);
-  --shadow-lg: 0 12px 32px -4px rgb(0 0 0 / 0.12), 0 8px 16px -8px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 24px 48px -12px rgb(0 0 0 / 0.15), 0 12px 24px -12px rgb(0 0 0 / 0.12);
-  --shadow-glow: 0 0 40px hsl(var(--primary) / 0.25);
-  --shadow-glow-strong: 0 0 60px hsl(var(--primary) / 0.35);
+  /* Shadows - 更柔和的阴影 */
+  --shadow-sm: 0 1px 3px 0 rgb(72 60 48 / 0.08);
+  --shadow-md: 0 4px 12px -2px rgb(72 60 48 / 0.12), 0 2px 4px -2px rgb(72 60 48 / 0.08);
+  --shadow-lg: 0 12px 32px -4px rgb(72 60 48 / 0.14), 0 8px 16px -8px rgb(72 60 48 / 0.1);
+  --shadow-xl: 0 24px 48px -12px rgb(72 60 48 / 0.16), 0 12px 24px -12px rgb(72 60 48 / 0.12);
+  --shadow-glow: 0 0 40px hsl(var(--primary) / 0.2);
+  --shadow-glow-strong: 0 0 60px hsl(var(--primary) / 0.3);
   
-  /* Gradients - 增强饱和度 */
-  --gradient-primary: linear-gradient(135deg, hsl(246 92% 65%) 0%, hsl(199 94% 55%) 50%, hsl(280 94% 65%) 100%);
-  --gradient-hero: linear-gradient(180deg, hsl(240 5% 99%) 0%, hsl(240 10% 96%) 100%);
-  --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(240 5% 98%) 100%);
+  /* Gradients - 优雅的金色渐变 */
+  --gradient-primary: linear-gradient(135deg, hsl(45 65% 58%) 0%, hsl(38 60% 52%) 100%);
+  --gradient-hero: linear-gradient(180deg, hsl(45 8% 97%) 0%, hsl(45 6% 94%) 100%);
+  --gradient-card: linear-gradient(145deg, hsl(45 10% 100%) 0%, hsl(45 6% 98%) 100%);
   
   /* Spacing - 增强间距 */
   --spacing-xs: 6px;
@@ -61,58 +61,58 @@
   --spacing-xl: 36px;
   --spacing-2xl: 48px;
   
-  /* Radius */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  /* Radius - 更大的圆角 */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 28px;
   --radius-full: 9999px;
   
-  /* Transitions */
-  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* Transitions - 更流畅的曲线 */
+  --transition-fast: 150ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition-base: 250ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition-slow: 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Dark Mode */
+/* Dark Mode - 深色模式调整 */
 .dark {
-  --primary: 246 88% 72%;
-  --primary-light: 246 92% 80%;
-  --primary-dark: 246 85% 62%;
-  --primary-foreground: 240 10% 8%;
+  --primary: 45 60% 62%;
+  --primary-light: 45 65% 72%;
+  --primary-dark: 38 55% 52%;
+  --primary-foreground: 45 12% 15%;
   
-  --accent: 199 90% 62%;
-  --accent-light: 199 92% 72%;
-  --accent-secondary: 280 90% 72%;
+  --accent: 195 50% 58%;
+  --accent-light: 195 55% 68%;
+  --accent-secondary: 165 45% 52%;
   
-  --background: 240 10% 8%;
-  --background-secondary: 240 8% 12%;
-  --background-tertiary: 240 8% 16%;
+  --background: 45 8% 12%;
+  --background-secondary: 45 6% 15%;
+  --background-tertiary: 45 5% 18%;
   
-  --foreground: 240 5% 96%;
-  --foreground-muted: 240 5% 65%;
-  --foreground-subtle: 240 5% 45%;
+  --foreground: 45 5% 92%;
+  --foreground-muted: 45 5% 72%;
+  --foreground-subtle: 45 5% 55%;
   
-  --border: 240 5% 20%;
-  --border-hover: 240 5% 30%;
+  --border: 45 6% 22%;
+  --border-hover: 45 6% 32%;
   
-  --surface: 240 8% 12%;
-  --surface-hover: 240 8% 16%;
+  --surface: 45 6% 18%;
+  --surface-hover: 45 6% 22%;
 
-  --success: 142 72% 50%;
-  --error: 0 80% 65%;
-  --warning: 38 88% 55%;
+  --success: 155 50% 50%;
+  --error: 5 60% 62%;
+  --warning: 35 80% 58%;
   
-  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.2);
-  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.2);
-  --shadow-lg: 0 12px 32px -4px rgb(0 0 0 / 0.4), 0 8px 16px -8px rgb(0 0 0 / 0.3);
-  --shadow-xl: 0 24px 48px -12px rgb(0 0 0 / 0.5);
-  --shadow-glow: 0 0 40px hsl(var(--primary) / 0.3);
-  --shadow-glow-strong: 0 0 60px hsl(var(--primary) / 0.4);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 12px 32px -4px rgb(0 0 0 / 0.5), 0 8px 16px -8px rgb(0 0 0 / 0.4);
+  --shadow-xl: 0 24px 48px -12px rgb(0 0 0 / 0.6);
+  --shadow-glow: 0 0 40px hsl(var(--primary) / 0.25);
+  --shadow-glow-strong: 0 0 60px hsl(var(--primary) / 0.35);
   
-  --gradient-primary: linear-gradient(135deg, hsl(246 88% 72%) 0%, hsl(199 90% 62%) 50%, hsl(280 90% 72%) 100%);
-  --gradient-hero: linear-gradient(180deg, hsl(240 10% 8%) 0%, hsl(240 8% 12%) 100%);
-  --gradient-card: linear-gradient(145deg, hsl(240 8% 14%) 0%, hsl(240 8% 10%) 100%);
+  --gradient-primary: linear-gradient(135deg, hsl(45 60% 62%) 0%, hsl(38 55% 56%) 100%);
+  --gradient-hero: linear-gradient(180deg, hsl(45 8% 12%) 0%, hsl(45 6% 15%) 100%);
+  --gradient-card: linear-gradient(145deg, hsl(45 6% 20%) 0%, hsl(45 6% 16%) 100%);
 }
 
 * {
@@ -126,49 +126,61 @@ html {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: hsl(var(--background));
   color: hsl(var(--foreground));
-  line-height: 1.6;
+  line-height: 1.7;
+  letter-spacing: -0.01em;
 }
 
-/* Gradient Text */
+/* Gradient Text - 优雅的金色渐变 */
 .text-gradient {
   background: var(--gradient-primary);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  font-weight: 600;
 }
 
-/* Glass Effect - 增强毛玻璃效果 */
+/* Glass Effect - 精致的毛玻璃效果 */
 .glass {
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: var(--shadow-sm), 0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+  background: rgba(255, 253, 250, 0.65);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 
+    var(--shadow-sm), 
+    0 0 0 1px rgba(255, 255, 255, 0.3) inset,
+    0 8px 32px rgba(72, 60, 48, 0.04);
 }
 
 .dark .glass {
-  background: rgba(20, 20, 30, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: var(--shadow-sm), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  background: rgba(30, 28, 25, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 
+    var(--shadow-sm), 
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
 }
 
 .glass-strong {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(20px) saturate(200%);
-  -webkit-backdrop-filter: blur(20px) saturate(200%);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: var(--shadow-md), 0 0 0 1px rgba(255, 255, 255, 0.3) inset;
+  background: rgba(255, 253, 250, 0.85);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 
+    var(--shadow-md), 
+    0 0 0 1px rgba(255, 255, 255, 0.4) inset,
+    0 12px 48px rgba(72, 60, 48, 0.06);
 }
 
 .dark .glass-strong {
-  background: rgba(20, 20, 30, 0.9);
+  background: rgba(30, 28, 25, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: var(--shadow-md), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  box-shadow: 
+    var(--shadow-md), 
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset;
 }
 
 /* Input Card Style - 增强间距 */
@@ -184,19 +196,23 @@ body {
   box-shadow: var(--shadow-lg), var(--shadow-glow);
 }
 
-/* Button Variants */
+/* Button Variants - 精致的按钮样式 */
 .btn-primary {
   background: var(--gradient-primary);
   color: hsl(var(--primary-foreground));
   border: none;
   border-radius: var(--radius-full);
   font-weight: 500;
+  letter-spacing: -0.01em;
   transition: all var(--transition-base);
+  box-shadow: 0 2px 8px hsl(var(--primary) / 0.2);
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-lg), var(--shadow-glow-strong);
+  box-shadow: 
+    0 8px 24px hsl(var(--primary) / 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.2) inset;
 }
 
 .btn-primary:active {
@@ -215,12 +231,15 @@ body {
   border: 1px solid hsl(var(--border));
   border-radius: var(--radius-full);
   font-weight: 500;
+  letter-spacing: -0.01em;
   transition: all var(--transition-base);
 }
 
 .btn-secondary:hover {
   border-color: hsl(var(--border-hover));
   background: hsl(var(--surface-hover));
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-ghost {
@@ -236,12 +255,12 @@ body {
   color: hsl(var(--foreground));
 }
 
-/* Suggestion Chip - 增强间距 */
+/* Suggestion Chip - 精致的建议标签 */
 .suggestion-chip {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 20px;
+  padding: 14px 22px;
   background: hsl(var(--surface));
   border: 1px solid hsl(var(--border));
   border-radius: var(--radius-full);
@@ -249,20 +268,24 @@ body {
   color: hsl(var(--foreground));
   cursor: pointer;
   transition: all var(--transition-base);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  box-shadow: 0 1px 3px rgba(72, 60, 48, 0.05);
 }
 
 .suggestion-chip:hover {
   border-color: hsl(var(--primary) / 0.4);
-  background: hsl(var(--primary) / 0.08);
+  background: hsl(var(--primary) / 0.06);
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
 
-/* Message Bubble */
+/* Message Bubble - 精致的消息气泡 */
 .message-user {
   background: var(--gradient-primary);
   color: hsl(var(--primary-foreground));
   border-radius: var(--radius-lg) var(--radius-lg) var(--radius-sm) var(--radius-lg);
+  box-shadow: 0 2px 12px hsl(var(--primary) / 0.15);
 }
 
 .message-agent {
@@ -270,20 +293,25 @@ body {
   color: hsl(var(--foreground));
   border: 1px solid hsl(var(--border));
   border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-sm);
+  box-shadow: 0 1px 3px rgba(72, 60, 48, 0.06);
 }
 
-/* Image Card */
+/* Image Card - 高级质感的图片卡片 */
 .image-card {
   position: relative;
   overflow: hidden;
   border-radius: var(--radius-md);
   background: hsl(var(--background-secondary));
   transition: all var(--transition-slow);
+  box-shadow: 0 2px 8px rgba(72, 60, 48, 0.06);
+  border: 1px solid hsl(var(--border) / 0.5);
 }
 
 .image-card:hover {
   transform: scale(1.02);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 
+    0 12px 40px rgba(72, 60, 48, 0.12),
+    0 0 0 1px hsl(var(--primary) / 0.1);
 }
 
 .image-card img {
@@ -309,13 +337,14 @@ body {
   opacity: 1;
 }
 
-/* Avatar */
+/* Avatar - 精致的头像 */
 .avatar {
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-full);
   font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .avatar-primary {
@@ -324,14 +353,15 @@ body {
 }
 
 .avatar-secondary {
-  background: hsl(var(--background-tertiary));
+  background: linear-gradient(145deg, hsl(var(--background-tertiary)) 0%, hsl(var(--background-secondary)) 100%);
   color: hsl(var(--foreground-muted));
+  border: 1px solid hsl(var(--border));
 }
 
-/* Scrollbar */
+/* Scrollbar - 精致的滚动条 */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
 }
 
 ::-webkit-scrollbar-track {
@@ -339,12 +369,13 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--foreground-subtle) / 0.3);
-  border-radius: 3px;
+  background: linear-gradient(180deg, hsl(var(--primary) / 0.4) 0%, hsl(var(--primary) / 0.3) 100%);
+  border-radius: 4px;
+  border: 1px solid hsl(var(--background));
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--foreground-subtle) / 0.5);
+  background: linear-gradient(180deg, hsl(var(--primary) / 0.6) 0%, hsl(var(--primary) / 0.5) 100%);
 }
 
 /* Loading Spinner */
@@ -414,23 +445,25 @@ body {
   animation: pulse 1.5s ease-in-out infinite;
 }
 
-/* Toast */
+/* Toast - 精致的提示框 */
 .toast {
   background: hsl(var(--surface));
   border: 1px solid hsl(var(--border));
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
-  padding: 12px 16px;
+  box-shadow: 
+    var(--shadow-lg),
+    0 0 0 1px rgba(255, 255, 255, 0.3) inset;
+  padding: 14px 18px;
 }
 
 .toast-error {
-  border-color: hsl(0 84% 60%);
-  background: hsl(0 84% 60% / 0.1);
+  border-color: hsl(5 65% 58%);
+  background: hsl(5 65% 58% / 0.08);
 }
 
 .toast-success {
-  border-color: hsl(142 76% 36%);
-  background: hsl(142 76% 36% / 0.1);
+  border-color: hsl(155 55% 42%);
+  background: hsl(155 55% 42% / 0.08);
 }
 
 /* Focus Ring */

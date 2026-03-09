@@ -27,6 +27,7 @@ import { useChatStore } from '../store/chatStore';
 import { useConversationStore } from '../store/conversationStore';
 import type { ChatMessage } from '../api/types';
 import { MarkdownRenderer } from '../components/common/MarkdownRenderer';
+import { VoiceInput } from '../components/common/VoiceInput';
 
 const { Content, Footer } = Layout;
 const { Text } = Typography;
@@ -357,18 +358,25 @@ export const ChatPage: React.FC = () => {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+                <VoiceInput 
+                  onTranscript={(text) => setInputValue(prev => prev ? prev + ' ' + text : text)}
+                  disabled={isLoading}
+                  size="large"
+                  showLanguageSelector={true}
+                />
                 <TextArea
                     value={inputValue}
                     onChange={e => setInputValue(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="输入消息..."
+                    placeholder="输入消息... (支持语音输入)"
                     autoSize={{ minRows: 1, maxRows: 6 }}
                     variant="borderless"
                     style={{ 
                         resize: 'none', 
                         padding: '8px 12px', 
                         fontSize: 15,
-                        lineHeight: 1.6
+                        lineHeight: 1.6,
+                        flex: 1
                     }}
                     disabled={isLoading}
                 />
@@ -384,7 +392,7 @@ export const ChatPage: React.FC = () => {
             </div>
           </Card>
           <div style={{ textAlign: 'center', marginTop: 8 }}>
-             <Text type="secondary" style={{ fontSize: 12 }}>AI生成内容可能不准确，请核实重要信息</Text>
+             <Text type="secondary" style={{ fontSize: 12 }}>AI生成内容可能不准确，请核实重要信息 | 支持语音输入</Text>
           </div>
         </div>
       </Footer>

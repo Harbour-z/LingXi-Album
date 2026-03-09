@@ -1,0 +1,37 @@
+@startuml
+!include ./_theme.puml
+
+title 场景时序：上传并索引（同步/异步）
+
+actor 用户 as user
+participant "Web 前端" as fe
+participant "Storage Router" as router
+participant "StorageService" as storage
+participant "SearchService" as search
+participant "EmbeddingService" as emb
+database "Qdrant" as qdrant
+
+user -> fe : 选择图片
+fe -> router : POST /api/v1/storage/upload\n(file, async_index)
+router -> storage : save_image()
+storage --> router : image_id, preview_url
+
+alt async_index=true
+  router -> router : BackgroundTasks.add_task(index_image)
+  router --> fe : 200 OK（先返回）
+  router -> search : index_image(image_id)
+  search -> emb : embed(image)
+  emb --> search : vector
+  search -> qdrant : upsert(vector,payload)
+  qdrant --> search : ack
+else async_index=false
+  router -> search : index_image(image_id)
+  search -> emb : embed(image)
+  emb --> search : vector
+  search -> qdrant : upsert(vector,payload)
+  qdrant --> search : ack
+  router --> fe : 200 OK（返回）
+end
+
+@enduml
+

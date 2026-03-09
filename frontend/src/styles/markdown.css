@@ -1,7 +1,8 @@
 .markdown-content {
-  line-height: 1.7;
-  color: #262626;
+  line-height: 1.75;
+  color: #2d2a26;
   word-wrap: break-word;
+  font-size: 15px;
 }
 
 .markdown-content * {
@@ -18,18 +19,21 @@
   margin-bottom: 0.8em;
   font-weight: 600;
   line-height: 1.3;
+  letter-spacing: -0.02em;
 }
 
 .markdown-content h1 {
   font-size: 1.8em;
   padding-bottom: 0.3em;
-  border-bottom: 2px solid #1677ff;
+  border-bottom: 2px solid hsl(45 65% 58%);
+  color: #1a1814;
 }
 
 .markdown-content h2 {
   font-size: 1.5em;
   padding-bottom: 0.3em;
-  border-bottom: 1px solid #d9d9d9;
+  border-bottom: 1px solid #e0ded9;
+  color: #1f1d19;
 }
 
 .markdown-content h3 {
@@ -76,47 +80,53 @@
 
 .markdown-content blockquote {
   margin: 1em 0;
-  padding: 12px 16px;
-  background-color: #f5f5f5;
-  border-left: 4px solid #1677ff;
-  color: #595959;
+  padding: 16px 18px;
+  background-color: hsl(45 6% 95%);
+  border-left: 4px solid hsl(45 65% 58%);
+  color: #5a5650;
   font-style: italic;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 8px 8px 0;
 }
 
 .markdown-content code {
   font-family: 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 0.9em;
-  background-color: #f0f0f0;
-  color: #e83e8c;
-  padding: 2px 6px;
-  border-radius: 4px;
+  background-color: hsl(45 6% 92%);
+  color: #b85c4c;
+  padding: 3px 7px;
+  border-radius: 6px;
   white-space: pre-wrap;
   word-break: break-word;
+  border: 1px solid hsl(45 8% 85%);
 }
 
 .markdown-content pre {
   margin: 12px 0;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 4px 16px rgba(72, 60, 48, 0.08);
+  border: 1px solid hsl(45 8% 85%);
 }
 
 .markdown-content pre code {
-  background-color: #2d2d2d;
-  color: #f8f8f2;
-  padding: 12px 16px;
+  background-color: #2b2824;
+  color: #f0ece6;
+  padding: 16px 18px;
   display: block;
   white-space: pre;
   overflow-x: auto;
+  font-size: 13.5px;
 }
 
 .markdown-content .code-block {
-  background-color: #1e1e1e;
-  border-radius: 8px;
+  background-color: #24211d;
+  border-radius: 12px;
   padding: 0;
   margin: 12px 0;
   max-height: 400px;
   overflow: auto;
+  box-shadow: 0 4px 20px rgba(72, 60, 48, 0.1);
+  border: 1px solid hsl(45 6% 20%);
 }
 
 .markdown-content .code-block::-webkit-scrollbar {
@@ -125,40 +135,39 @@
 }
 
 .markdown-content .code-block::-webkit-scrollbar-track {
-  background: #2d2d2d;
+  background: #2b2824;
 }
 
 .markdown-content .code-block::-webkit-scrollbar-thumb {
-  background: #595959;
+  background: hsl(45 65% 58% / 0.4);
   border-radius: 4px;
 }
 
 .markdown-content .code-block::-webkit-scrollbar-thumb:hover {
-  background: #8c8c8c;
+  background: hsl(45 65% 58% / 0.6);
 }
 
 .markdown-content a {
-  color: #1677ff;
+  color: hsl(45 65% 52%);
   text-decoration: none;
-  border-bottom: 1px dashed #1677ff;
+  border-bottom: 1px dashed hsl(45 65% 52%);
   transition: all 0.2s;
+  font-weight: 500;
 }
 
 .markdown-content a:hover {
-  background-color: #e6f7ff;
+  background-color: hsl(45 65% 58% / 0.1);
   border-bottom-style: solid;
-}
-
-.markdown-content a:visited {
-  color: #722ed1;
+  color: hsl(38 60% 48%);
 }
 
 .markdown-content img {
   max-width: 80%;
   height: auto;
-  border-radius: 8px;
+  border-radius: 12px;
   margin: 12px 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(72, 60, 48, 0.1);
+  border: 1px solid hsl(45 8% 85%);
   display: block;
   margin-left: auto;
   margin-right: auto;
@@ -171,43 +180,47 @@
   font-size: 14px;
   background-color: #fff;
   overflow-x: auto;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(72, 60, 48, 0.06);
+  border: 1px solid hsl(45 8% 85%);
 }
 
 .markdown-content th,
 .markdown-content td {
-  padding: 12px;
+  padding: 14px;
   text-align: left;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #ebe9e4;
 }
 
 .markdown-content th {
   font-weight: 600;
-  color: #262626;
-  background-color: #fafafa;
-  border-bottom: 2px solid #d9d9d9;
+  color: #1a1814;
+  background-color: hsl(45 6% 95%);
+  border-bottom: 2px solid hsl(45 65% 58%);
 }
 
 .markdown-content tr:hover {
-  background-color: #fafafa;
+  background-color: hsl(45 6% 96%);
 }
 
 .markdown-content td {
-  color: #595959;
+  color: #4a4640;
 }
 
 .markdown-content hr {
   border: none;
-  border-top: 2px solid #d9d9d9;
+  border-top: 2px solid #e8e6e1;
   margin: 2em 0;
 }
 
 .markdown-content strong {
   font-weight: 600;
-  color: #1a1a1a;
+  color: #1a1814;
 }
 
 .markdown-content em {
   font-style: italic;
+  color: #3d3a36;
 }
 
 .markdown-content del {
@@ -238,44 +251,47 @@
 
 .markdown-content details {
   margin: 0.8em 0;
-  padding: 12px;
-  background-color: #f5f5f5;
-  border-radius: 8px;
-  border: 1px solid #d9d9d9;
+  padding: 16px;
+  background-color: hsl(45 6% 95%);
+  border-radius: 12px;
+  border: 1px solid #e8e6e1;
 }
 
 .markdown-content summary {
   cursor: pointer;
   font-weight: 600;
-  color: #1677ff;
+  color: hsl(45 65% 52%);
+  transition: color 0.2s;
 }
 
 .markdown-content summary:hover {
-  text-decoration: underline;
+  color: hsl(38 60% 48%);
 }
 
 .markdown-content .inline-code {
-  background-color: #f0f0f0;
-  color: #e83e8c;
-  padding: 2px 6px;
-  border-radius: 4px;
+  background-color: hsl(45 6% 92%);
+  color: #b85c4c;
+  padding: 3px 7px;
+  border-radius: 6px;
   font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
   font-size: 0.9em;
   display: inline;
   white-space: pre-wrap;
   word-break: break-word;
+  border: 1px solid hsl(45 8% 85%);
 }
 
 .markdown-content .block-code {
-  background-color: #2d2d2d;
-  color: #f8f8f2;
-  padding: 12px 16px;
-  border-radius: 8px;
+  background-color: #2b2824;
+  color: #f0ece6;
+  padding: 16px 18px;
+  border-radius: 12px;
   font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
   font-size: 14px;
   display: block;
   white-space: pre-wrap;
   word-break: break-word;
+  box-shadow: 0 2px 8px rgba(72, 60, 48, 0.06);
 }
 
 .markdown-content .task-list-item {

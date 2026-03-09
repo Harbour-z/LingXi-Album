@@ -1,0 +1,29 @@
+@startuml
+!include ../_theme.puml
+
+title Smart Album - 开发视图（Development View）
+
+package "frontend/" as fe #FFFFFF {
+  package "src/api" as fe_api #FFFFFF
+  package "src/pages" as fe_pages #FFFFFF
+  package "src/components" as fe_comp #FFFFFF
+  package "src/store" as fe_store #FFFFFF
+}
+
+package "app/" as be #FFFFFF {
+  package "routers" as be_router #FFFFFF
+  package "services" as be_service #FFFFFF
+  package "models" as be_models #FFFFFF
+  [config.py] as cfg <<compute>> #DBEAFE
+  [main.py] as main <<compute>> #DBEAFE
+}
+
+package "tests/" as tests #FFFFFF
+
+fe_api -[#374151]-> be_router : Axios 调用 REST API
+be_router -[#374151]-> be_service : 依赖注入/单例获取
+be_service -[#374151]-> be_models : schema / payload
+tests -[#374151]-> be_service : 单元测试
+
+@enduml
+

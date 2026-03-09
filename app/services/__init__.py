@@ -11,6 +11,7 @@ from .image_recommendation_service import ImageRecommendationService, get_image_
 from .image_edit_service import ImageEditService, get_image_edit_service
 from .pointcloud_service import PointCloudService, get_pointcloud_service
 from .knowledge_qa_service import KnowledgeQAService, get_knowledge_qa_service
+from .asr_service import ASRService, get_asr_service
 
 __all__ = [
     "EmbeddingService",
@@ -31,4 +32,6 @@ __all__ = [
     "get_pointcloud_service",
     "KnowledgeQAService",
     "get_knowledge_qa_service",
+    "ASRService",
+    "get_asr_service",
 ]

@@ -338,3 +338,57 @@ class PointCloudListResponse(BaseResponse):
     """点云列表响应"""
     data: Optional[List[PointCloudResult]] = None
     total: int = Field(0, description="总数")
+
+
+# ==================== ASR 实时语音识别相关模型 ====================
+
+class ASRSessionConfig(BaseModel):
+    """ASR 会话配置"""
+    language: str = Field("zh", description="音频源语言: zh(中文), yue(粤语), en(英文), ja(日语)等")
+    sample_rate: int = Field(16000, description="音频采样率(Hz)，支持16000和8000")
+    input_format: str = Field("pcm", description="音频格式，支持pcm和opus")
+    enable_vad: bool = Field(True, description="是否开启服务端VAD语音活动检测")
+    vad_threshold: float = Field(0.0, ge=-1, le=1, description="VAD检测阈值，推荐0.0")
+    vad_silence_ms: int = Field(400, ge=200, le=6000, description="VAD断句检测阈值(ms)")
+
+
+class ASRTranscriptResult(BaseModel):
+    """ASR 转写结果"""
+    text: str = Field(..., description="识别文本")
+    is_final: bool = Field(True, description="是否为最终结果")
+    session_id: Optional[str] = Field(None, description="会话ID")
+
+
+class ASREventType(str, Enum):
+    """ASR 事件类型"""
+    SESSION_CREATED = "session.created"
+    SESSION_UPDATED = "session.updated"
+    SPEECH_STARTED = "input_audio_buffer.speech_started"
+    SPEECH_STOPPED = "input_audio_buffer.speech_stopped"
+    TRANSCRIPT_PARTIAL = "conversation.item.input_audio_transcription.text"
+    TRANSCRIPT_FINAL = "conversation.item.input_audio_transcription.completed"
+    ERROR = "error"
+    SESSION_FINISHED = "session.finished"
+
+
+class ASRSessionStatus(str, Enum):
+    """ASR 会话状态"""
+    CONNECTING = "connecting"
+    CONNECTED = "connected"
+    ACTIVE = "active"
+    CLOSING = "closing"
+    CLOSED = "closed"
+    ERROR = "error"
+
+
+class ASRSessionInfo(BaseModel):
+    """ASR 会话信息"""
+    session_id: str = Field(..., description="会话ID")
+    status: ASRSessionStatus = Field(..., description="会话状态")
+    config: ASRSessionConfig = Field(..., description="会话配置")
+    created_at: datetime = Field(default_factory=datetime.now, description="创建时间")
+
+
+class ASRSessionResponse(BaseResponse):
+    """ASR 会话响应"""
+    data: Optional[ASRSessionInfo] = None

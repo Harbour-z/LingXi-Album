@@ -9,8 +9,6 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   GithubOutlined,
-  BulbOutlined,
-  BulbFilled,
   SunOutlined,
   MoonOutlined,
   CameraFilled,
@@ -55,20 +53,15 @@ const MainLayout: React.FC = () => {
       icon: <CloudUploadOutlined />,
       label: '上传图片',
     },
-    {
-      key: '/markdown-test',
-      icon: <BulbOutlined />,
-      label: 'Markdown测试',
-    },
   ];
 
   return (
     <Layout style={{ minHeight: '100vh', background: 'transparent' }}>
-      <Sider 
-        trigger={null} 
-        collapsible 
-        collapsed={collapsed} 
-        theme={isDarkMode ? 'dark' : 'light'} 
+      <Sider
+        trigger={null}
+        collapsible
+        collapsed={collapsed}
+        theme={isDarkMode ? 'dark' : 'light'}
         width={220}
         style={{
           boxShadow: '0 4px 30px rgba(0,0,0,0.1)',
@@ -85,10 +78,10 @@ const MainLayout: React.FC = () => {
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'transparent' }}>
-          <div style={{ 
-            height: 80, 
-            display: 'flex', 
-            alignItems: 'center', 
+          <div style={{
+            height: 80,
+            display: 'flex',
+            alignItems: 'center',
             justifyContent: 'center',
             paddingTop: 12,
             marginBottom: 8,
@@ -108,51 +101,54 @@ const MainLayout: React.FC = () => {
               WebkitBackdropFilter: 'blur(12px)',
               boxShadow: isDarkMode ? '0 4px 12px rgba(0,0,0,0.2)' : '0 4px 12px rgba(0,0,0,0.05)' // Subtle shadow
             }}
-            onClick={() => navigate('/')}
+              onClick={() => navigate('/')}
             >
-                <div style={{
-                    width: 32,
-                    height: 32,
-                    background: 'linear-gradient(135deg, #1677ff 0%, #36cfc9 100%)',
-                    borderRadius: 10,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 4px 10px rgba(22, 119, 255, 0.3)'
-                }}>
-                    <CameraFilled style={{ fontSize: 18, color: '#fff' }} />
+              <div style={{
+                width: 36,
+                height: 36,
+                background: 'linear-gradient(135deg, hsl(45 65% 58%) 0%, hsl(38 60% 52%) 100%)',
+                borderRadius: 12,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px hsl(45 65% 58% / 0.3)',
+                transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+              }}>
+                <CameraFilled style={{ fontSize: 18, color: '#fff' }} />
+              </div>
+
+              {!collapsed && (
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <h1 style={{
+                    fontSize: '1.15rem',
+                    fontWeight: 700,
+                    margin: 0,
+                    lineHeight: 1.2,
+                    color: isDarkMode ? 'hsl(45 60% 62%)' : 'hsl(45 65% 52%)',
+                    background: isDarkMode
+                      ? 'linear-gradient(90deg, hsl(45 60% 62%) 0%, hsl(38 55% 56%) 100%)'
+                      : 'linear-gradient(90deg, hsl(45 65% 52%) 0%, hsl(38 60% 48%) 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                    letterSpacing: '-0.02em'
+                  }}>
+                    智能相册
+                  </h1>
+                  <span style={{
+                    fontSize: '0.7rem',
+                    color: isDarkMode ? 'hsl(45 60% 72%)' : 'hsl(38 60% 55%)',
+                    fontWeight: 600,
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase'
+                  }}>
+                    AI Powered
+                  </span>
                 </div>
-                
-                {!collapsed && (
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <h1 style={{ 
-                            fontSize: '1.1rem', 
-                            fontWeight: '800', 
-                            margin: 0,
-                            lineHeight: 1.2,
-                            background: isDarkMode 
-                                ? 'linear-gradient(90deg, #fff 0%, #e6f4ff 100%)' 
-                                : 'linear-gradient(90deg, #1677ff 0%, #36cfc9 100%)',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                            letterSpacing: '-0.5px'
-                        }}>
-                            智能相册
-                        </h1>
-                        <span style={{ 
-                            fontSize: '0.65rem', 
-                            color: isDarkMode ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)',
-                            fontWeight: 600,
-                            letterSpacing: '1px',
-                            textTransform: 'uppercase'
-                        }}>
-                            AI Powered
-                        </span>
-                    </div>
-                )}
+              )}
             </div>
           </div>
-          
+
           {/* Custom Navigation Menu */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '16px 12px' }}>
             {menuItems.map((item) => {
@@ -169,7 +165,7 @@ const MainLayout: React.FC = () => {
                     marginBottom: 8,
                     cursor: 'pointer',
                     borderRadius: 16,
-                    backgroundColor: isActive 
+                    backgroundColor: isActive
                       ? (isDarkMode ? 'rgba(255, 255, 255, 0.1)' : '#e6f4ff')
                       : 'transparent',
                     color: isActive
@@ -203,10 +199,10 @@ const MainLayout: React.FC = () => {
                       opacity: collapsed ? 0 : 1, // Hide sidebar line in collapsed mode for cleaner look
                     }} />
                   )}
-                  
-                  <span style={{ 
-                    fontSize: 20, 
-                    display: 'flex', 
+
+                  <span style={{
+                    fontSize: 20,
+                    display: 'flex',
                     alignItems: 'center',
                     color: isActive ? (isDarkMode ? '#fff' : '#1677ff') : 'inherit',
                     transition: 'color 0.3s',
@@ -215,10 +211,10 @@ const MainLayout: React.FC = () => {
                   }}>
                     {item.icon}
                   </span>
-                  
+
                   {!collapsed && (
-                    <span style={{ 
-                      fontSize: 15, 
+                    <span style={{
+                      fontSize: 15,
                       fontWeight: isActive ? 600 : 400,
                       whiteSpace: 'nowrap',
                       opacity: collapsed ? 0 : 1,
@@ -231,7 +227,7 @@ const MainLayout: React.FC = () => {
               );
             })}
           </div>
-          
+
           {/* GitHub Link & Architecture */}
           <div style={{
             padding: '16px',
@@ -257,7 +253,7 @@ const MainLayout: React.FC = () => {
             >
               {!collapsed && <span style={{ marginLeft: 8 }}>产品架构</span>}
             </Button>
-            
+
             <Button
               type="text"
               icon={<GithubOutlined style={{ fontSize: 18 }} />}
@@ -277,36 +273,36 @@ const MainLayout: React.FC = () => {
         </div>
       </Sider>
       <Layout style={{ background: 'transparent' }}>
-        <Header style={{ 
-            padding: '0 24px 0 0', 
-            // Remove background: colorBgContainer to allow transparency
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between',
-            position: 'sticky',
-            top: 0,
-            zIndex: 9,
-            boxShadow: '0 4px 30px rgba(0, 0, 0, 0.03)',
-            backdropFilter: 'blur(20px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-            backgroundColor: isDarkMode ? 'rgba(20, 20, 20, 0.65)' : 'rgba(255, 255, 255, 0.65)',
-            borderBottom: isDarkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(255, 255, 255, 0.4)',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        <Header style={{
+          padding: '0 24px 0 0',
+          // Remove background: colorBgContainer to allow transparency
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          position: 'sticky',
+          top: 0,
+          zIndex: 9,
+          boxShadow: '0 4px 30px rgba(0, 0, 0, 0.03)',
+          backdropFilter: 'blur(20px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+          backgroundColor: isDarkMode ? 'rgba(20, 20, 20, 0.65)' : 'rgba(255, 255, 255, 0.65)',
+          borderBottom: isDarkMode ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(255, 255, 255, 0.4)',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', paddingLeft: 16 }}>
-              <Button
-                type="text"
-                icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-                onClick={() => setCollapsed(!collapsed)}
-                style={{
-                  fontSize: '16px',
-                  width: 64,
-                  height: 64,
-                }}
-              />
+            <Button
+              type="text"
+              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+              onClick={() => setCollapsed(!collapsed)}
+              style={{
+                fontSize: '16px',
+                width: 64,
+                height: 64,
+              }}
+            />
           </div>
-          
-          <div 
+
+          <div
             onClick={toggleTheme}
             style={{
               width: 68,
@@ -341,28 +337,28 @@ const MainLayout: React.FC = () => {
               zIndex: 2,
               position: 'relative' // 确保滑块在图标之上
             }}>
-               <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-                  <SunOutlined style={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      transform: `translate(-50%, -50%) scale(${isDarkMode ? 0 : 1})`,
-                      opacity: isDarkMode ? 0 : 1,
-                      transition: 'all 0.3s',
-                      color: '#faad14',
-                      fontSize: 14
-                  }} />
-                  <MoonOutlined style={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      transform: `translate(-50%, -50%) scale(${isDarkMode ? 1 : 0})`,
-                      opacity: isDarkMode ? 1 : 0,
-                      transition: 'all 0.3s',
-                      color: '#fff',
-                      fontSize: 14
-                  }} />
-               </div>
+              <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                <SunOutlined style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: `translate(-50%, -50%) scale(${isDarkMode ? 0 : 1})`,
+                  opacity: isDarkMode ? 0 : 1,
+                  transition: 'all 0.3s',
+                  color: '#faad14',
+                  fontSize: 14
+                }} />
+                <MoonOutlined style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: `translate(-50%, -50%) scale(${isDarkMode ? 1 : 0})`,
+                  opacity: isDarkMode ? 1 : 0,
+                  transition: 'all 0.3s',
+                  color: '#fff',
+                  fontSize: 14
+                }} />
+              </div>
             </div>
           </div>
         </Header>

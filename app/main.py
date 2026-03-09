@@ -33,6 +33,7 @@ from .routers import (
     image_edit_router,
     pointcloud_router,
     knowledge_qa_router,
+    asr_router,
 )
 from .models import SystemStatus
 
@@ -210,6 +211,7 @@ def create_app() -> FastAPI:
     app.include_router(image_edit_router, prefix=api_prefix)
     app.include_router(pointcloud_router, prefix=api_prefix)
     app.include_router(knowledge_qa_router, prefix=api_prefix)
+    app.include_router(asr_router, prefix=api_prefix)
 
     # 挂载前端静态文件（如果存在）
     frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"

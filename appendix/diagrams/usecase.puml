@@ -1,0 +1,54 @@
+@startuml
+!include ./_theme.puml
+
+title Smart Album - 用例图（Use Case）
+
+left to right direction
+
+actor "普通用户" as User
+actor "内容创作者" as Creator
+actor "管理员" as Admin
+actor "外部AI服务" as External
+
+rectangle "智慧相册系统" as System #FFFFFF {
+  usecase "上传图片" as UC1
+  usecase "索引图片" as UC2
+  usecase "语义检索（文本搜图）" as UC3
+  usecase "以图搜图" as UC4
+  usecase "图文混合检索" as UC5
+  usecase "元数据检索（标签/日期）" as UC6
+  usecase "组合检索（语义+元数据）" as UC7
+  usecase "对话找图（Agent）" as UC8
+  usecase "删除图片" as UC9
+  usecase "图片推荐" as UC10
+  usecase "图片编辑（风格转换）" as UC11
+  usecase "社交文案生成" as UC12
+  usecase "系统状态/健康检查" as UC13
+  usecase "配置管理（Embedding通道）" as UC14
+}
+
+User --> UC1
+User --> UC3
+User --> UC4
+User --> UC6
+User --> UC7
+User --> UC8
+User --> UC9
+
+Creator --> UC10
+Creator --> UC11
+Creator --> UC12
+
+Admin --> UC13
+Admin --> UC14
+
+UC1 ..> UC2 : <<include>>
+UC8 ..> UC3 : <<include>>
+UC8 ..> UC6 : <<include>>
+UC8 ..> UC7 : <<include>>
+
+External --> UC11
+External --> UC12
+
+@enduml
+

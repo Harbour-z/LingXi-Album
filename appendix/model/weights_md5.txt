@@ -1,0 +1,9 @@
+模型权重MD5清单（占位，需按实际权重文件生成）
+
+规则：
+- 每行：<md5>  <relative_path>
+- 若使用云API（无本地权重），请说明“无本地权重”，并附API配置与合规说明
+
+示例：
+TBD  models/qwen3-vl-embedding-2b/weights.safetensors
+

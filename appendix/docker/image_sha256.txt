@@ -1,0 +1,10 @@
+Docker 镜像 SHA256 清单（占位，构建后填写）
+
+规则：
+- 每行：<image_name>:<tag>  sha256:<digest>
+
+示例：
+smart-album-backend:1.0.0  sha256:TBD
+smart-album-frontend:1.0.0  sha256:TBD
+qdrant/qdrant:v1.15.0  sha256:TBD
+

@@ -1,0 +1,50 @@
+@startuml
+!include ./_theme.puml
+
+title Smart Album - 部署拓扑（Deployment Topology）
+
+cloud "Internet" as net #FFFFFF
+
+node "Client" as client #FFFFFF {
+  component "Browser" as browser <<compute>> #DBEAFE
+}
+
+node "Edge / Gateway（可选）" as edge #FFFFFF {
+  component "Nginx / API Gateway" as gw <<compute>> #DBEAFE
+}
+
+node "App Layer" as app #FFFFFF {
+  component "Frontend\nStatic (Vite build)" as fe <<compute>> #DBEAFE
+  component "Backend\nFastAPI (Uvicorn)" as be <<compute>> #DBEAFE
+}
+
+node "Data Layer" as data #FFFFFF {
+  database "Qdrant" as qdrant <<storage>> #DCFCE7
+  database "Object Storage / FS" as storage <<storage>> #DCFCE7
+}
+
+cloud "Model Providers" as models #FFFFFF {
+  component "Embedding Provider\n(local/aliyun)" as emb <<external>> #EDE9FE
+  component "LLM Provider\n(OpenAI compatible)" as llm <<external>> #EDE9FE
+}
+
+node "Observability（规划）" as obs #FFFFFF {
+  component "Prometheus" as prom <<compute>> #DBEAFE
+  component "Grafana" as graf <<compute>> #DBEAFE
+  component "Jaeger" as jae <<compute>> #DBEAFE
+}
+
+net -[#374151]-> browser
+browser -[#374151]-> fe
+browser -[#374151]-> be
+be -[#374151]-> qdrant
+be -[#374151]-> storage
+be -[#374151]-> emb
+be -[#374151]-> llm
+
+be -[#374151]-> prom : metrics
+be -[#374151]-> jae : traces
+prom -[#374151]-> graf : dashboards
+
+@enduml
+

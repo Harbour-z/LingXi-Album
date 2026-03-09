@@ -1,0 +1,41 @@
+@startuml
+!include ../_theme.puml
+
+title Smart Album - 逻辑视图（Logical View）
+
+package "客户端" as client #FFFFFF {
+  [Web 前端\nReact + TS + Ant Design] as FE <<compute>>
+}
+
+package "后端 API（FastAPI）" as api #FFFFFF {
+  component "Router 层\n/app/routers" as Router <<compute>> #E0F2FE
+  component "Service 层\n/app/services（单例）" as Service <<compute>> #DBEAFE
+  component "Schema\n/app/models/schemas.py" as Schema <<compute>> #DBEAFE
+}
+
+package "外部能力" as ext #FFFFFF {
+  component "Embedding\nQwen3-VL（本地/云）" as Emb <<external>> #EDE9FE
+  database "Vector DB\nQdrant" as Qdrant <<storage>> #DCFCE7
+  database "Storage\n本地文件系统" as Storage <<storage>> #DCFCE7
+  component "LLM / Agent Runtime\nOpenJiuwen ReAct\nOpenAI Compatible API" as LLM <<external>> #EDE9FE
+}
+
+FE -[#374151]-> Router : HTTP /api/v1
+Router -[#374151]-> Service : 调用业务逻辑
+Service -[#374151]-> Schema : 读写模型
+
+Service -[#374151]-> Emb : 生成向量（text/image/mm）
+Service -[#374151]-> Qdrant : query_points / upsert\npayload filter
+Service -[#374151]-> Storage : save/get/delete
+Service -[#374151]-> LLM : Agent 推理 + 工具调用
+
+legend left
+  = 图例 =
+  LEGEND_COMPUTE  计算/服务组件
+  LEGEND_STORAGE  数据与存储
+  LEGEND_EXTERNAL 外部模型/云服务
+  LEGEND_SECURITY 安全与合规能力（规划）
+endlegend
+
+@enduml
+

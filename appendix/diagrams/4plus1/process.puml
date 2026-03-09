@@ -1,0 +1,33 @@
+@startuml
+!include ../_theme.puml
+
+title Smart Album - 进程视图（Process View）
+
+node "用户设备" as user_device #FFFFFF {
+  component "浏览器\nSPA" as browser <<compute>> #DBEAFE
+}
+
+node "应用服务器" as app_server #FFFFFF {
+  component "Uvicorn Worker\nFastAPI" as api <<compute>> #DBEAFE
+  component "BackgroundTasks\n异步索引" as bg <<compute>> #DBEAFE
+}
+
+node "数据与模型" as data_plane #FFFFFF {
+  database "Qdrant\nVector DB" as qdrant <<storage>> #DCFCE7
+  database "本地存储\nimages/" as fs <<storage>> #DCFCE7
+  component "Embedding Provider\nlocal/aliyun" as emb <<external>> #EDE9FE
+  component "LLM Provider\nOpenAI Compatible" as llm <<external>> #EDE9FE
+}
+
+browser -[#374151]-> api : HTTP /api/v1/*
+api -[#374151]-> fs : 保存/读取图片
+api -[#374151]-> qdrant : 查询/写入向量
+api -[#374151]-> emb : 生成 embedding
+api -[#374151]-> llm : Agent chat（可选）
+
+api -[#374151]-> bg : submit task（async_index）
+bg -[#374151]-> emb : embedding
+bg -[#374151]-> qdrant : upsert
+
+@enduml
+

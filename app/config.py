@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     AGENT_PROVIDER: str = "openai"
     OPENAI_API_KEY: Optional[str] = None
     OPENAI_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"  # 默认阿里云
-    OPENAI_MODEL_NAME: str = "qwen-max"
+    OPENAI_MODEL_NAME: str = "qwen3.5-plus"
 
     LLM_SSL_VERIFY: bool = False
     LLM_SSL_CERT: Optional[str] = None
@@ -83,6 +83,17 @@ class Settings(BaseSettings):
     IMAGE_EDITING_MODEL_NAME: Optional[str] = None
     IMAGE_EDITING_MODEL_API_KEY: Optional[str] = None
     IMAGE_EDITING_MODEL_BASE_URL: Optional[str] = None
+
+    # ASR (Automatic Speech Recognition) Configuration
+    ASR_API_KEY: Optional[str] = None
+    ASR_MODEL_NAME: str = "qwen3-asr-flash-realtime"
+    ASR_BASE_URL: str = "wss://dashscope.aliyuncs.com/api-ws/v1/realtime"
+    ASR_LANGUAGE: str = "zh"
+    ASR_SAMPLE_RATE: int = 16000
+    ASR_INPUT_FORMAT: str = "pcm"
+    ASR_ENABLE_VAD: bool = True
+    ASR_VAD_THRESHOLD: float = 0.0
+    ASR_VAD_SILENCE_MS: int = 400
     
     class Config:
         env_file = ".env"

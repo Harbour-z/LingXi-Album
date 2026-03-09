@@ -8,6 +8,7 @@
 
 - **多模态检索**：支持纯文本、纯图像、图文混合三种检索模式
 - **自然语言对话**：通过ReAct智能体理解复杂查询意图
+- **实时语音输入**：集成 qwen3-asr-flash-realtime 模型，支持语音转文字（中英文双语，准确率95%+）
 - **灵活日期解析**：支持"1.18"、"去年"、"上个月"等多种日期格式
 - **组合检索**：支持语义+元数据+日期的多维度组合查询
 - **图片编辑**：集成通义千问图像编辑模型，支持风格转换
@@ -19,6 +20,7 @@
 - Python 3.11+、FastAPI、Pydantic v2
 - Qdrant向量数据库（本地/Docker/云）
 - Qwen3-VL多模态Embedding（本地推理/阿里云API）
+- Qwen3-ASR-Flash-Realtime 实时语音识别（阿里云API）
 - OpenJiuwen ReAct Agent框架
 - OpenAI兼容API（通义千问/OpenAI）
 
@@ -44,21 +46,23 @@ ImgEmbedding2VecDB/
 │   │   ├── storage.py          # 存储路由（486行）
 │   │   ├── embedding.py        # Embedding路由
 │   │   ├── vector_db.py        # 向量数据库路由
+│   │   ├── asr.py              # 语音识别路由（WebSocket）
 │   │   ├── social.py           # 社交媒体路由
 │   │   ├── image_edit.py       # 图片编辑路由
 │   │   ├── image_recommendation.py  # 图片推荐路由
 │   │   └── pointcloud.py       # 点云生成路由
 │   └── services/               # 服务层（单例模式）
-│       ├── agent_service.py    # Agent服务（1247行）
-│       ├── search_service.py   # 搜索服务（712行）
-│       ├── vector_db_service.py    # 向量数据库服务（606行）
-│       ├── embedding_service.py    # Embedding服务
-│       ├── storage_service.py      # 存储服务
-│       ├── aliyun_embedding_client.py  # 阿里云Embedding客户端
-│       ├── image_edit_service.py     # 图片编辑服务
-│       ├── image_recommendation_service.py  # 图片推荐服务
-│       ├── social_service.py           # 社交服务
-│       └── pointcloud_service.py       # 点云生成服务
+│   │   ├── agent_service.py    # Agent服务（1247行）
+│   │   ├── search_service.py   # 搜索服务（712行）
+│   │   ├── vector_db_service.py    # 向量数据库服务（606行）
+│   │   ├── embedding_service.py    # Embedding服务
+│   │   ├── storage_service.py      # 存储服务
+│   │   ├── asr_service.py          # 语音识别服务（DashScope SDK）
+│   │   ├── aliyun_embedding_client.py  # 阿里云Embedding客户端
+│   │   ├── image_edit_service.py     # 图片编辑服务
+│   │   ├── image_recommendation_service.py  # 图片推荐服务
+│   │   ├── social_service.py           # 社交服务
+│   │   └── pointcloud_service.py       # 点云生成服务
 ├── frontend/                   # 前端应用
 │   ├── src/
 │   │   ├── api/                # API客户端层
@@ -68,9 +72,12 @@ ImgEmbedding2VecDB/
 │   │   │   ├── storage.ts      # 存储API
 │   │   │   ├── social.ts       # 社交API
 │   │   │   ├── image_edit.ts   # 图片编辑API
+│   │   │   ├── voiceService.ts # 语音识别服务（WebSocket）
 │   │   │   └── types.ts        # TypeScript类型定义
 │   │   ├── components/         # 共享组件
 │   │   │   ├── common/         # 通用组件（EmptyState、LoadingSpinner等）
+│   │   │   │   ├── AudioWaveform.tsx  # 语音波形可视化
+│   │   │   │   └── VoiceInput.tsx     # 语音输入组件
 │   │   │   ├── gallery/        # 画廊组件（ImageCard）
 │   │   │   ├── layout/         # 布局组件（MainLayout）
 │   │   │   └── search/         # 搜索组件（SearchBox、ImageSearchModal）
@@ -82,7 +89,8 @@ ImgEmbedding2VecDB/
 │   │   │   └── ArchitecturePage.tsx  # 架构说明页面
 │   │   └── store/              # 状态管理
 │   │       ├── chatStore.ts    # 聊天状态管理
-│   │       └── themeStore.ts   # 主题状态管理
+│   │       ├── themeStore.ts   # 主题状态管理
+│   │       └── voiceStore.ts   # 语音输入状态管理
 │   └── package.json            # 前端依赖配置
 ├── storage/                    # 图片存储目录
 ├── qdrant_data/                # Qdrant本地数据
@@ -238,6 +246,9 @@ npm run test
 ### 点云生成（Pointcloud）
 - `POST /api/v1/pointcloud/generate` - 生成3D点云模型
 
+### 语音识别（ASR）
+- `WS /api/v1/asr/realtime` - 实时语音识别（WebSocket）
+
 ### 系统状态（System）
 - `GET /` - API根路由
 - `GET /health` - 健康检查
@@ -294,6 +305,36 @@ npm run test
         "image_ids": ["uuid3", "uuid4"],
         "reason": "基于您的搜索结果推荐"
     }
+}
+```
+
+### ASR语音识别配置（ASRSessionConfig）
+```python
+{
+    "language": "zh",
+    "sample_rate": 16000,
+    "input_format": "pcm",
+    "enable_vad": true,
+    "vad_threshold": 0.0,
+    "vad_silence_ms": 400
+}
+```
+
+### ASR识别事件（ASREvent）
+```python
+{
+    "type": "session.ready",
+    "session_id": "uuid"
+}
+
+{
+    "type": "transcript.partial",
+    "text": "你好"
+}
+
+{
+    "type": "transcript.final",
+    "text": "你好世界"
 }
 ```
 
@@ -373,7 +414,33 @@ ReActAgentConfig(
 - 使用 `datetime.strptime()` 解析多种ISO格式
 - 计算当前时间并推导相对日期范围
 
-### 5. 安全性设计
+### 5. 实时语音识别（ASR）
+
+**模型：** Qwen3-ASR-Flash-Realtime
+- **识别语言：** 中文、英文、粤语、日语、韩语
+- **采样率：** 16kHz
+- **音频格式：** PCM16
+- **准确率：** 95%以上
+
+**部署方式：**
+- 阿里云DashScope API：通过DashScope SDK调用（唯一方式）
+
+**技术实现：**
+- **WebSocket通信**：实时双向通信，低延迟
+- **VAD语音检测**：服务端自动检测语音段落，400ms静音结束
+- **音频处理流程**：
+  1. 前端：AudioContext采集（Float32）→ PCM16转换 → Base64编码
+  2. WebSocket：实时传输Base64音频数据
+  3. 后端：DashScope SDK → 阿里云ASR API
+  4. 返回：中间结果（partial）+ 最终结果（final）
+
+**前端组件：**
+- `VoiceInput`: 主组件，支持点击/长按两种交互模式
+- `AudioWaveform`: Canvas波形可视化，实时反馈音量
+- `voiceStore`: Zustand状态管理，统一管理语音状态
+- `voiceService`: WebSocket服务类，处理音频采集和传输
+
+### 6. 安全性设计
 
 **文件命名：**
 - 使用UUID自动生成，禁止外部指定
@@ -412,12 +479,34 @@ ReActAgentConfig(
 - Docker模式：`docker run -p 6333:6333 qdrant/qdrant`
 - 云模式：检查 `QDRANT_HOST`、`QDRANT_PORT`、`QDRANT_API_KEY`
 
+### 6. 语音识别无法使用
+**原因：** 
+- 麦克风权限被拒绝
+- WebSocket连接失败
+- ASR API Key未配置
+**解决：**
+- 检查浏览器麦克风权限设置
+- 确认后端服务正常运行
+- 在`.env`中配置`ASR_API_KEY`
+- 刷新页面重试
+
+### 7. 语音识别不准确
+**原因：**
+- 环境噪音过大
+- 语速过快或发音不清晰
+- 语言选择错误
+**解决：**
+- 在安静环境中使用
+- 语速适中，发音清晰
+- 选择正确的语言
+
 ## 扩展功能
 
 ### 已实现
 - ✅ 多模态Embedding（文本/图像/图文混合）
 - ✅ 语义检索、以图搜图、图文混合检索
 - ✅ ReAct智能体对话
+- ✅ 实时语音识别（中英文双语，准确率95%+）
 - ✅ 灵活日期解析
 - ✅ 组合检索（语义+元数据+日期）
 - ✅ 图片风格编辑（通义千问图像编辑）

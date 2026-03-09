@@ -1,0 +1,37 @@
+@startuml
+!include ./_theme.puml
+
+title 场景时序：对话找图（ReAct 工具编排）
+
+actor 用户 as user
+participant "Web 前端" as fe
+participant "Agent Router" as router
+participant "AgentService" as svc
+participant "ReAct Agent" as agent
+participant "Search Router" as s_router
+participant "SearchService" as search
+participant "EmbeddingService" as emb
+database "Qdrant" as qdrant
+
+user -> fe : 输入自然语言查询
+fe -> router : POST /api/v1/agent/chat\n(query, session_id)
+router -> svc : chat()
+svc -> agent : run(query, tools)
+
+loop 1..N（max_iteration）
+  agent -> s_router : 调用工具 /api/v1/search/*\n(semantic/meta/hybrid)
+  s_router -> search : semantic/meta/hybrid
+  search -> emb : embed(text/image/mm)
+  emb --> search : vector
+  search -> qdrant : query_points(filter)
+  qdrant --> search : results
+  search --> s_router : results
+  s_router --> agent : Observation
+end
+
+agent --> svc : answer + Markdown 图片链接
+svc --> router : 解析图片链接 → results.images
+router --> fe : answer + results.images
+
+@enduml
+

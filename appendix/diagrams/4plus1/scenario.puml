@@ -1,0 +1,37 @@
+@startuml
+!include ../_theme.puml
+
+title Smart Album - 场景视图（Scenarios）
+
+actor 用户 as user
+participant "Web 前端" as fe
+participant "FastAPI Router" as router
+participant "SearchService" as search
+participant "EmbeddingService" as emb
+database "Qdrant" as qdrant
+database "Storage" as storage
+participant "ReAct Agent" as agent
+
+== S1 上传即索引 ==
+user -> fe : 选择图片并上传
+fe -> router : POST /storage/upload
+router -> storage : save_image()
+router -> search : index_image(async?) 
+search -> emb : embed(image)
+search -> qdrant : upsert(vector,payload)
+router --> fe : image_id + preview_url
+
+== S2 对话找图 ==
+user -> fe : 输入自然语言
+fe -> router : POST /agent/chat
+router -> agent : chat(query)
+agent -> router : 调用工具（/search/*）
+router -> search : semantic/meta/hybrid
+search -> emb : embed(text/mm)
+search -> qdrant : query_points(filter)
+router --> agent : Observation results
+agent --> router : answer + Markdown 图片链接
+router --> fe : answer + results.images
+
+@enduml
+

@@ -1,0 +1,33 @@
+@startuml
+!include ../_theme.puml
+
+title Smart Album - 物理视图（Physical View）
+
+node "方案 A：个人本地" as local #FFFFFF {
+  node "Laptop / MiniPC" as local_host #FFFFFF {
+    component "Web 前端\n静态文件" as local_fe <<compute>> #DBEAFE
+    component "FastAPI 后端" as local_be <<compute>> #DBEAFE
+    database "Qdrant\n本地数据目录" as local_qdrant <<storage>> #DCFCE7
+    database "images/\n本地磁盘" as local_fs <<storage>> #DCFCE7
+  }
+}
+
+node "方案 B：家庭/NAS（Docker）" as nas #FFFFFF {
+  node "NAS Host" as nas_host #FFFFFF {
+    component "frontend container" as nas_fe <<compute>> #DBEAFE
+    component "backend container" as nas_be <<compute>> #DBEAFE
+    database "qdrant container\nvolume: qdrant_data/" as nas_qdrant <<storage>> #DCFCE7
+    database "volume: storage/" as nas_fs <<storage>> #DCFCE7
+  }
+}
+
+cloud "方案 C：机构/云（K8s）" as cloud #FFFFFF {
+  node "Ingress / API Gateway" as gw #FFFFFF
+  node "Backend Deployment" as be_dep #FFFFFF
+  database "Qdrant Cluster" as q_cluster <<storage>> #DCFCE7
+  database "Object Storage" as obj <<storage>> #DCFCE7
+  component "Observability\nProm+Grafana+Jaeger" as obs <<compute>> #DBEAFE
+}
+
+@enduml
+

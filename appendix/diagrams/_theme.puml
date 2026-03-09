@@ -1,0 +1,40 @@
+@startuml
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName "Times New Roman"
+skinparam dpi 200
+
+skinparam rectangle {
+  RoundCorner 12
+  BorderColor #1F2937
+  FontColor #111827
+}
+
+skinparam component {
+  RoundCorner 12
+  BorderColor #1F2937
+  FontColor #111827
+}
+
+skinparam package {
+  BorderColor #9CA3AF
+  FontColor #111827
+}
+
+skinparam ArrowColor #374151
+skinparam ArrowThickness 1.2
+
+!define COLOR_COMPUTE #2563EB
+!define COLOR_STORAGE #16A34A
+!define COLOR_NETWORK #6B7280
+!define COLOR_SECURITY #DC2626
+!define COLOR_EXTERNAL #7C3AED
+
+!define LEGEND_COMPUTE <color:COLOR_COMPUTE>■</color>
+!define LEGEND_STORAGE <color:COLOR_STORAGE>■</color>
+!define LEGEND_NETWORK <color:COLOR_NETWORK>■</color>
+!define LEGEND_SECURITY <color:COLOR_SECURITY>■</color>
+!define LEGEND_EXTERNAL <color:COLOR_EXTERNAL>■</color>
+
+@enduml
+
