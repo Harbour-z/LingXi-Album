@@ -1,0 +1,256 @@
+$input-bubble-prefix: '.input-bubble';
+
+$glow-radius-sm: 8px;
+$glow-radius-md: 12px;
+$glow-radius-lg: 16px;
+$glow-radius-xl: 20px;
+
+$glow-spread-sm: 0.3;
+$glow-spread-md: 0.5;
+$glow-spread-lg: 0.7;
+
+$glow-intensity-subtle: 0.15;
+$glow-intensity-medium: 0.3;
+$glow-intensity-strong: 0.5;
+
+$glow-blur-sm: 8px;
+$glow-blur-md: 12px;
+$glow-blur-lg: 16px;
+$glow-blur-xl: 24px;
+
+$glow-animation-duration: 2.4s;
+$glow-animation-easing: cubic-bezier(0.4, 0, 0.2, 1);
+
+$glow-feedback-duration: 200ms;
+$glow-feedback-easing: ease-out;
+
+$colors: (
+  blue: (
+    light: #7fb3ff,
+    dark: #5a9ae8,
+    glow: rgba(127, 179, 255, 0.6),
+    glow-dark: rgba(90, 154, 232, 0.5)
+  ),
+  purple: (
+    light: #a78bfa,
+    dark: #8b5cf6,
+    glow: rgba(167, 139, 250, 0.6),
+    glow-dark: rgba(139, 92, 246, 0.5)
+  ),
+  pink: (
+    light: #f472b6,
+    dark: #ec4899,
+    glow: rgba(244, 114, 182, 0.6),
+    glow-dark: rgba(236, 72, 153, 0.5)
+  ),
+  cyan: (
+    light: #22d3ee,
+    dark: #06b6d4,
+    glow: rgba(34, 211, 238, 0.6),
+    glow-dark: rgba(6, 182, 212, 0.5)
+  ),
+  green: (
+    light: #4ade80,
+    dark: #22c55e,
+    glow: rgba(74, 222, 128, 0.6),
+    glow-dark: rgba(34, 197, 94, 0.5)
+  ),
+  orange: (
+    light: #fb923c,
+    dark: #f97316,
+    glow: rgba(251, 146, 60, 0.6),
+    glow-dark: rgba(249, 115, 22, 0.5)
+  )
+);
+
+@mixin glow-layers($color, $intensity, $blur, $spread) {
+  box-shadow: 
+    0 0 calc(#{$blur} * 0.5) calc(#{$spread} * 0.5) rgba($color, $intensity * 0.8),
+    0 0 $blur $spread rgba($color, $intensity * 0.6),
+    0 0 calc(#{$blur} * 1.5) calc(#{$spread} * 1.5) rgba($color, $intensity * 0.4),
+    0 0 calc(#{$blur} * 2) calc(#{$spread} * 2) rgba($color, $intensity * 0.2);
+}
+
+@keyframes glow-feedback {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+#{$input-bubble-prefix} {
+  position: relative;
+  border-radius: 24px;
+  transition: all $glow-feedback-duration $glow-feedback-easing;
+
+  &.light-theme {
+    background: #ffffff;
+    border: 2px solid #e8f0fe;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  &.dark-theme {
+    background: #1a1a2e;
+    border: 2px solid #2d3748;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  @each $color-name, $color-map in $colors {
+    $color-light: map-get($color-map, light);
+    $color-dark: map-get($color-map, dark);
+    $color-glow: map-get($color-map, glow);
+    $color-glow-dark: map-get($color-map, glow-dark);
+
+    .color-#{$color-name}.light-theme {
+      &:hover {
+        border-color: rgba($color-light, 0.5);
+        box-shadow:
+          0 4px 12px rgba(0, 0, 0, 0.08),
+          0 0 $glow-blur-md $glow-spread-md $color-glow;
+      }
+
+      &:focus-within {
+        animation: glow-breath-#{$color-name}-light $glow-animation-duration $glow-animation-easing infinite;
+      }
+
+      &.is-typing {
+        animation: glow-feedback $glow-feedback-duration $glow-feedback-easing;
+        border-color: rgba($color-light, 0.9);
+      }
+    }
+
+    .color-#{$color-name}.dark-theme {
+      &:hover {
+        border-color: rgba($color-dark, 0.6);
+        box-shadow:
+          0 4px 12px rgba(0, 0, 0, 0.3),
+          0 0 $glow-blur-md $glow-spread-md $color-glow-dark;
+      }
+
+      &:focus-within {
+        animation: glow-breath-#{$color-name}-dark $glow-animation-duration $glow-animation-easing infinite;
+      }
+
+      &.is-typing {
+        animation: glow-feedback $glow-feedback-duration $glow-feedback-easing;
+        border-color: rgba($color-dark, 0.9);
+      }
+    }
+
+    @keyframes glow-breath-#{$color-name}-light {
+      0%, 100% {
+        border-color: rgba($color-light, 0.3);
+        box-shadow: 
+          0 4px 12px rgba(0, 0, 0, 0.08),
+          0 0 $glow-blur-md $glow-spread-md rgba($color-light, 0.3);
+      }
+      25% {
+        border-color: rgba($color-light, 0.5);
+        box-shadow: 
+          0 4px 12px rgba(0, 0, 0, 0.08),
+          0 0 $glow-blur-lg $glow-spread-md rgba($color-light, 0.5);
+      }
+      50% {
+        border-color: rgba($color-light, 0.9);
+        box-shadow: 
+          0 4px 12px rgba(0, 0, 0, 0.08),
+          0 0 $glow-blur-xl $glow-spread-lg rgba($color-light, 0.9);
+      }
+      75% {
+        border-color: rgba($color-light, 0.5);
+        box-shadow: 
+          0 4px 12px rgba(0, 0, 0, 0.08),
+          0 0 $glow-blur-lg $glow-spread-md rgba($color-light, 0.5);
+      }
+    }
+
+    @keyframes glow-breath-#{$color-name}-dark {
+      0%, 100% {
+        border-color: rgba($color-dark, 0.4);
+        box-shadow: 
+          0 4px 12px rgba(0, 0, 0, 0.3),
+          0 0 $glow-blur-md $glow-spread-md rgba($color-dark, 0.4);
+      }
+      25% {
+        border-color: rgba($color-dark, 0.6);
+        box-shadow: 
+          0 4px 12px rgba(0, 0, 0, 0.3),
+          0 0 $glow-blur-lg $glow-spread-md rgba($color-dark, 0.6);
+      }
+      50% {
+        border-color: rgba($color-dark, 0.9);
+        box-shadow: 
+          0 4px 12px rgba(0, 0, 0, 0.3),
+          0 0 $glow-blur-xl $glow-spread-lg rgba($color-dark, 0.9);
+      }
+      75% {
+        border-color: rgba($color-dark, 0.6);
+        box-shadow: 
+          0 4px 12px rgba(0, 0, 0, 0.3),
+          0 0 $glow-blur-lg $glow-spread-md rgba($color-dark, 0.6);
+      }
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    transition: none;
+  }
+
+  .ant-card-body {
+    padding: 8px;
+  }
+
+  .input-content {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .ant-input,
+  .ant-input:hover,
+  .ant-input:focus {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .ant-btn-primary {
+    transition: all $glow-feedback-duration $glow-feedback-easing;
+    
+    &:hover {
+      transform: scale(1.05);
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+
+  @media (max-width: 768px) {
+    border-radius: 20px;
+
+    .ant-card-body {
+      padding: 6px;
+    }
+
+    .input-content {
+      gap: 6px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    border-radius: 16px;
+
+    .ant-card-body {
+      padding: 4px;
+    }
+  }
+}

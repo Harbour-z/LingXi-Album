@@ -34,11 +34,6 @@ const MainLayout: React.FC = () => {
       label: '首页',
     },
     {
-      key: '/chat',
-      icon: <MessageOutlined />,
-      label: '智能对话',
-    },
-    {
       key: '/conversations',
       icon: <ProjectOutlined />,
       label: '对话历史',

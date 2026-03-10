@@ -1,93 +1,83 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
-export interface TypewriterPart {
+interface TypewriterPart {
   text: string;
   style?: React.CSSProperties;
-  className?: string;
 }
 
 interface TypewriterEffectProps {
   parts: TypewriterPart[];
   speed?: number;
   cursorColor?: string;
-  style?: React.CSSProperties;
-  className?: string;
 }
 
 export const TypewriterEffect: React.FC<TypewriterEffectProps> = ({
   parts,
-  speed = 50,
-  cursorColor = '#1677ff',
-  style,
-  className,
+  speed = 100,
+  cursorColor = '#1677ff'
 }) => {
-  const [currentLength, setCurrentLength] = useState(0);
-  const [isTyping, setIsTyping] = useState(true);
-
-  // Calculate total length
-  const totalLength = parts.reduce((acc, part) => acc + part.text.length, 0);
+  const [displayedParts, setDisplayedParts] = useState<TypewriterPart[]>([]);
+  const [currentPartIndex, setCurrentPartIndex] = useState(0);
+  const [currentCharIndex, setCurrentCharIndex] = useState(0);
+  const [showCursor, setShowCursor] = useState(true);
 
   useEffect(() => {
-    setCurrentLength(0);
-    setIsTyping(true);
+    const timer = setInterval(() => {
+      setShowCursor(prev => !prev);
+    }, 500);
 
-    const intervalId = setInterval(() => {
-      setCurrentLength((prev) => {
-        if (prev < totalLength) {
-          return prev + 1;
-        } else {
-          clearInterval(intervalId);
-          setIsTyping(false);
-          return prev;
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (currentPartIndex >= parts.length) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      const currentPart = parts[currentPartIndex];
+      const nextCharIndex = currentCharIndex + 1;
+
+      if (nextCharIndex <= currentPart.text.length) {
+        setCurrentCharIndex(nextCharIndex);
+
+        const newDisplayedParts = [...displayedParts];
+        if (currentPartIndex >= newDisplayedParts.length) {
+          newDisplayedParts.push({ text: '', style: currentPart.style });
         }
-      });
+        newDisplayedParts[currentPartIndex] = {
+          text: currentPart.text.substring(0, nextCharIndex),
+          style: currentPart.style
+        };
+        setDisplayedParts(newDisplayedParts);
+      } else {
+        setCurrentPartIndex(prev => prev + 1);
+        setCurrentCharIndex(0);
+      }
     }, speed);
 
-    return () => clearInterval(intervalId);
-  }, [totalLength, speed]);
-
-  // Render parts based on currentLength
-  const renderContent = () => {
-    let remainingChars = currentLength;
-    
-    return parts.map((part, index) => {
-      if (remainingChars <= 0) {
-        return null;
-      }
-      
-      const charCount = Math.min(remainingChars, part.text.length);
-      const displayText = part.text.slice(0, charCount);
-      remainingChars -= charCount;
-      
-      return (
-        <span key={index} style={part.style} className={part.className}>
-          {displayText}
-        </span>
-      );
-    });
-  };
+    return () => clearTimeout(timer);
+  }, [currentPartIndex, currentCharIndex, parts, speed, displayedParts]);
 
   return (
-    <span style={style} className={className}>
-      {renderContent()}
-      <span
-        style={{
-          display: 'inline-block',
-          width: '0.1em',
-          height: '1em',
-          backgroundColor: cursorColor,
-          marginLeft: '2px',
-          verticalAlign: 'text-bottom',
-          animation: 'blink 1s step-end infinite',
-          opacity: isTyping ? 1 : 0.5,
-        }}
-      />
-      <style>{`
-        @keyframes blink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0; }
-        }
-      `}</style>
+    <span>
+      {displayedParts.map((part, index) => (
+        <span key={index} style={part.style}>
+          {part.text}
+        </span>
+      ))}
+      {currentPartIndex < parts.length && (
+        <span
+          style={{
+            color: cursorColor,
+            opacity: showCursor ? 1 : 0,
+            marginLeft: 2,
+            fontWeight: 'bold'
+          }}
+        >
+          |
+        </span>
+      )}
     </span>
   );
 };

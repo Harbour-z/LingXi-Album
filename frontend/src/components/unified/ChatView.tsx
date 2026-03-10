@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import {
   Layout,
   Input,
@@ -23,18 +23,20 @@ import {
   PlusOutlined,
   HistoryOutlined,
 } from '@ant-design/icons';
-import { useChatStore } from '../store/chatStore';
-import { useConversationStore } from '../store/conversationStore';
-import type { ChatMessage } from '../api/types';
-import { MarkdownRenderer } from '../components/common/MarkdownRenderer';
-import { VoiceInput } from '../components/common/VoiceInput';
-import { InputBubble } from '../components/chat/InputBubble';
+import { useChatStore } from '../../store/chatStore';
+import { useConversationStore } from '../../store/conversationStore';
+import { useUnifiedStore } from '../../store/unifiedStore';
+import type { ChatMessage } from '../../api/types';
+import { MarkdownRenderer } from '../common/MarkdownRenderer';
+import { VoiceInput } from '../common/VoiceInput';
+import { InputBubble } from '../chat/InputBubble';
+import { usePerformanceMonitor } from '../../hooks/usePerformanceMonitor';
 
 const { Content, Footer } = Layout;
 const { Text } = Typography;
 const { TextArea } = Input;
 
-export const ChatPage: React.FC = () => {
+export const ChatView: React.FC = () => {
   const { messages, isLoading, sendMessage, clearHistory, setMessages, addMessage } = useChatStore();
   const { 
     currentConversation,
@@ -42,6 +44,7 @@ export const ChatPage: React.FC = () => {
     loadConversation,
     addMessageToCurrent,
   } = useConversationStore();
+  const { lastSearchQuery, setLastSearchQuery } = useUnifiedStore();
   const [inputValue, setInputValue] = useState('');
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
@@ -49,7 +52,8 @@ export const ChatPage: React.FC = () => {
   const [processedMessageIds, setProcessedMessageIds] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  // Initialize conversationId from URL params
+  usePerformanceMonitor('ChatView');
+  
   const getInitialConversationId = () => {
     const params = new URLSearchParams(window.location.search);
     return params.get('conversationId');
@@ -57,11 +61,8 @@ export const ChatPage: React.FC = () => {
   
   const [conversationId, setConversationId] = useState<string | null>(() => getInitialConversationId());
   
-  // Load conversation from URL params
   useEffect(() => {
     const convId = getInitialConversationId();
-    
-    // Only load if we have a conversationId and haven't loaded it yet
     if (convId && !currentConversation) {
       setIsRestoring(true);
       loadConversation(convId).catch(err => {
@@ -71,7 +72,6 @@ export const ChatPage: React.FC = () => {
     }
   }, [conversationId, currentConversation]);
 
-  // Restore messages when currentConversation is loaded
   useEffect(() => {
     if (currentConversation && conversationId === currentConversation.id) {
       setMessages(currentConversation.messages);
@@ -79,7 +79,6 @@ export const ChatPage: React.FC = () => {
     }
   }, [currentConversation, conversationId, setMessages]);
 
-  // Save agent message to IndexedDB when new agent message appears
   useEffect(() => {
     if (pendingAgentMessage) {
       addMessageToCurrent(pendingAgentMessage).catch(err => {
@@ -89,42 +88,40 @@ export const ChatPage: React.FC = () => {
     }
   }, [pendingAgentMessage, addMessageToCurrent]);
 
-  // Monitor messages to detect new agent messages
   useEffect(() => {
     const lastMessage = messages[messages.length - 1];
-    
-    // Check if we have a pending agent message that matches last message
     if (pendingAgentMessage === null && lastMessage && lastMessage.type === 'agent') {
-      // Check if this message has already been processed
       if (!processedMessageIds.has(lastMessage.id)) {
-        // Check if this is a new agent message (not from restoring)
         if (!currentConversation || 
             !currentConversation.messages.some(msg => msg.id === lastMessage.id)) {
           setPendingAgentMessage(lastMessage);
-          // Mark as processed
           setProcessedMessageIds(prev => new Set([...prev, lastMessage.id]));
         }
       }
     }
   }, [messages, pendingAgentMessage, currentConversation, processedMessageIds]);
 
-  // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
-  const handleSend = async () => {
+  useEffect(() => {
+    if (lastSearchQuery && messages.length === 0) {
+      setInputValue(lastSearchQuery);
+      setLastSearchQuery(null);
+    }
+  }, [lastSearchQuery, messages.length, setLastSearchQuery]);
+
+  const handleSend = useCallback(async () => {
     if (!inputValue.trim() || isLoading || isRestoring) return;
     const query = inputValue.trim();
     setInputValue('');
 
-    // Create new conversation if not exists
     let conversation = currentConversation;
     if (!conversation) {
       conversation = await createNewConversation();
     }
 
-    // Save user message to both stores
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
       type: 'user',
@@ -132,33 +129,28 @@ export const ChatPage: React.FC = () => {
       timestamp: new Date(),
     };
     
-    // Add to conversationStore (IndexedDB)
     await addMessageToCurrent(userMessage);
-    
-    // Send to agent (userMessage will be added to chatStore by sendMessage)
     await sendMessage(query, userMessage);
 
-    // Update URL with conversation ID
     if (conversation?.id && !window.location.search.includes(conversation.id)) {
       window.history.pushState({}, '', `/chat?conversationId=${conversation.id}`);
     }
-  };
+  }, [inputValue, isLoading, isRestoring, currentConversation, addMessageToCurrent, sendMessage]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
-  };
+  }, [handleSend]);
 
-  const handleNewConversation = async () => {
+  const handleNewConversation = useCallback(async () => {
     clearHistory();
     await createNewConversation();
-    setMessages([]);  // Clear chatStore messages
-    window.location.href = '/chat';
-  };
+    setMessages([]);
+  }, [clearHistory, createNewConversation, setMessages]);
 
-  const renderMessage = (msg: ChatMessage) => {
+  const renderMessage = useCallback((msg: ChatMessage) => {
     const isUser = msg.type === 'user';
     const isSystem = msg.type === 'system';
     
@@ -204,7 +196,6 @@ export const ChatPage: React.FC = () => {
               )}
             </Card>
 
-            {/* Images */}
             {msg.images && msg.images.length > 0 && (
               <div style={{ marginTop: 12 }}>
                 <Space size="small" style={{ marginBottom: 8 }}>
@@ -236,7 +227,6 @@ export const ChatPage: React.FC = () => {
               </div>
             )}
 
-            {/* Suggestions */}
             {msg.suggestions && msg.suggestions.length > 0 && (
                 <div style={{ marginTop: 12 }}>
                     <Space size={[8, 8]} wrap>
@@ -264,13 +254,13 @@ export const ChatPage: React.FC = () => {
         </Space>
       </div>
     );
-  };
+  }, [sendMessage]);
 
   return (
-    <Layout style={{ height: 'calc(100vh - 100px)', background: 'transparent' }}>
+    <Layout style={{ height: '100%', background: 'transparent' }}>
         <div style={{ 
             position: 'absolute', 
-            top: -60, 
+            top: -48, 
             right: 0, 
             zIndex: 1 
         }}>
@@ -295,7 +285,7 @@ export const ChatPage: React.FC = () => {
             </Space>
         </div>
 
-      <Content style={{ overflowY: 'auto', padding: '0 16px', scrollBehavior: 'smooth' }}>
+      <Content style={{ overflowY: 'auto', padding: '0 8px', scrollBehavior: 'smooth' }}>
         {isRestoring ? (
           <div style={{ 
               height: '100%', 
@@ -348,7 +338,7 @@ export const ChatPage: React.FC = () => {
         )}
       </Content>
       
-      <Footer style={{ background: 'transparent', padding: '16px 0' }}>
+      <Footer style={{ background: 'transparent', padding: '12px 0' }}>
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
           <InputBubble isTyping={inputValue.length > 0}>
                 <VoiceInput 
@@ -389,7 +379,6 @@ export const ChatPage: React.FC = () => {
         </div>
       </Footer>
 
-      {/* Conversation History Modal */}
       <Modal
         title="对话历史"
         open={showHistoryModal}
