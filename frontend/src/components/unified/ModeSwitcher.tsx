@@ -1,11 +1,12 @@
 import React from 'react';
 import { Segmented } from 'antd';
 import { HomeOutlined, MessageOutlined, SearchOutlined } from '@ant-design/icons';
-import type { ViewMode } from '../../store/unifiedStore';
+
+export type ViewMode = 'home' | 'chat' | 'search';
 
 interface ModeSwitcherProps {
   currentMode: ViewMode;
-  onModeChange: (mode: 'home' | 'chat' | 'search') => void;
+  onModeChange: (mode: ViewMode) => void;
 }
 
 export const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }) => {

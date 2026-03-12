@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import {
   Typography,
   Input,
@@ -16,7 +16,6 @@ import {
 import {
   SearchOutlined,
   PictureOutlined,
-  BulbOutlined,
   MessageOutlined,
 } from '@ant-design/icons';
 import { TypewriterEffect } from '../common/TypewriterEffect';
@@ -28,7 +27,6 @@ const { Title, Paragraph, Text } = Typography;
 const { TextArea } = Input;
 
 export const HomePageView: React.FC = () => {
-  const navigate = useNavigate();
   const [, setSearchParams] = useSearchParams();
   const { isDarkMode } = useThemeStore();
   const { searchQuery, setSearchQuery, topK, setTopK, setLastSearchQuery } = useUnifiedStore();
@@ -119,7 +117,7 @@ export const HomePageView: React.FC = () => {
   const features = [
     { icon: <SearchOutlined style={{ fontSize: 24, color: token.colorPrimary }} />, title: '语义搜索', desc: '用自然语言描述，智能理解您的意图' },
     { icon: <PictureOutlined style={{ fontSize: 24, color: token.colorSuccess }} />, title: '以图搜图', desc: '上传图片，找到相似的照片' },
-    { icon: <BulbOutlined style={{ fontSize: 24, color: token.colorWarning }} />, title: 'AI 对话', desc: '智能对话，多轮交互理解复杂需求' },
+    { icon: <MessageOutlined style={{ fontSize: 24, color: token.colorWarning }} />, title: 'AI 对话', desc: '智能对话，多轮交互理解复杂需求', action: () => setSearchParams({ mode: 'chat' }) },
   ];
 
   return (
@@ -305,12 +303,16 @@ export const HomePageView: React.FC = () => {
             <Row gutter={[24, 24]}>
               {features.map((feature, index) => (
                 <Col xs={24} md={8} key={index}>
-                  <Card hoverable style={{
-                    height: '100%',
-                    borderRadius: 16,
-                    transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                    border: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)'}`,
-                  }}
+                  <Card
+                    hoverable
+                    style={{
+                      height: '100%',
+                      borderRadius: 16,
+                      transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                      border: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)'}`,
+                      cursor: feature.action ? 'pointer' : 'default',
+                    }}
+                    onClick={feature.action}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = 'translateY(-4px)';
                       e.currentTarget.style.boxShadow = '0 12px 40px rgba(72,60,48,0.1)';

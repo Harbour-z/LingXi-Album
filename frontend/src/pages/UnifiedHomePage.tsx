@@ -17,8 +17,9 @@ export const UnifiedHomePage: React.FC = () => {
 
   useUnifiedDataPersistence();
 
-  // 直接从 URL 读取 viewMode，不再使用 unifiedStore 管理
+  // 从 URL 读取 viewMode 和 conversationId
   const modeParam = searchParams.get('mode');
+  const conversationId = searchParams.get('conversationId');
   const viewMode = (modeParam === 'chat' || modeParam === 'search') ? modeParam : 'home';
 
   useEffect(() => {
@@ -33,7 +34,6 @@ export const UnifiedHomePage: React.FC = () => {
   };
 
   const handleGoBack = () => {
-    // 简单实现：返回按钮直接回到首页
     handleBackToHome();
   };
 
@@ -41,7 +41,12 @@ export const UnifiedHomePage: React.FC = () => {
     if (mode === 'home') {
       handleBackToHome();
     } else {
-      setSearchParams({ mode });
+      // 保留 conversationId 如果存在且切换到 chat 模式
+      if (mode === 'chat' && conversationId) {
+        setSearchParams({ mode, conversationId });
+      } else {
+        setSearchParams({ mode });
+      }
     }
   };
 

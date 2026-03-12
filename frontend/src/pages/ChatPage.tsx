@@ -12,6 +12,7 @@ import {
   Spin,
   Tooltip,
   Modal,
+  message as antdMessage,
 } from 'antd';
 import {
   SendOutlined,
@@ -22,6 +23,7 @@ import {
   BulbOutlined,
   PlusOutlined,
   HistoryOutlined,
+  ExclamationCircleOutlined,
 } from '@ant-design/icons';
 import { useChatStore } from '../store/chatStore';
 import { useConversationStore } from '../store/conversationStore';
@@ -45,6 +47,7 @@ export const ChatPage: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
   const [pendingAgentMessage, setPendingAgentMessage] = useState<ChatMessage | null>(null);
   const [processedMessageIds, setProcessedMessageIds] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -64,9 +67,16 @@ export const ChatPage: React.FC = () => {
     // Only load if we have a conversationId and haven't loaded it yet
     if (convId && !currentConversation) {
       setIsRestoring(true);
+      setRestoreError(null);
       loadConversation(convId).catch(err => {
         console.error('Failed to load conversation:', err);
+        const errorMsg = err instanceof Error ? err.message : '加载对话历史失败';
+        setRestoreError(errorMsg);
         setIsRestoring(false);
+        antdMessage.error({
+          content: `加载对话失败: ${errorMsg}`,
+          duration: 5,
+        });
       });
     }
   }, [conversationId, currentConversation]);
@@ -118,29 +128,38 @@ export const ChatPage: React.FC = () => {
     const query = inputValue.trim();
     setInputValue('');
 
-    // Create new conversation if not exists
-    let conversation = currentConversation;
-    if (!conversation) {
-      conversation = await createNewConversation();
-    }
+    try {
+      // Create new conversation if not exists
+      let conversation = currentConversation;
+      if (!conversation) {
+        conversation = await createNewConversation();
+      }
 
-    // Save user message to both stores
-    const userMessage: ChatMessage = {
-      id: crypto.randomUUID(),
-      type: 'user',
-      content: query,
-      timestamp: new Date(),
-    };
-    
-    // Add to conversationStore (IndexedDB)
-    await addMessageToCurrent(userMessage);
-    
-    // Send to agent (userMessage will be added to chatStore by sendMessage)
-    await sendMessage(query, userMessage);
+      // Save user message to both stores
+      const userMessage: ChatMessage = {
+        id: crypto.randomUUID(),
+        type: 'user',
+        content: query,
+        timestamp: new Date(),
+      };
+      
+      // Add to conversationStore (IndexedDB)
+      await addMessageToCurrent(userMessage);
+      
+      // Send to agent (userMessage will be added to chatStore by sendMessage)
+      await sendMessage(query, userMessage);
 
-    // Update URL with conversation ID
-    if (conversation?.id && !window.location.search.includes(conversation.id)) {
-      window.history.pushState({}, '', `/chat?conversationId=${conversation.id}`);
+      // Update URL with conversation ID
+      if (conversation?.id && !window.location.search.includes(conversation.id)) {
+        window.history.pushState({}, '', `/chat?conversationId=${conversation.id}`);
+      }
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      const errorMsg = error instanceof Error ? error.message : '发送消息失败';
+      antdMessage.error({
+        content: `发送失败: ${errorMsg}`,
+        duration: 5,
+      });
     }
   };
 

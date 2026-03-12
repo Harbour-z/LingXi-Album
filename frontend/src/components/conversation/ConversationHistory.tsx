@@ -1,58 +1,71 @@
-import React, { useEffect } from 'react';
-import { List, Input, Button, Empty, Popconfirm, Tag, Space } from 'antd';
-import { 
-    MessageOutlined, 
-    DeleteOutlined, 
-    SearchOutlined,
+import React, { useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { List, Button, Empty, Popconfirm, Tag, Space, Typography } from 'antd';
+import {
+    MessageOutlined,
+    DeleteOutlined,
     PlusOutlined,
     ClockCircleOutlined
 } from '@ant-design/icons';
 import { useConversationStore } from '../../store/conversationStore';
 import type { ConversationListItem } from '../../types/conversation';
 
-const { Search } = Input;
+const { Text } = Typography;
 
 export const ConversationHistory: React.FC = () => {
+    const navigate = useNavigate();
     const {
         conversations,
-        filters,
         isLoading,
         loadConversations,
-        setFilters,
         deleteConversation,
         createNewConversation,
+        loadConversation,
+        clearCurrentConversation,
     } = useConversationStore();
 
     useEffect(() => {
         loadConversations();
     }, [loadConversations]);
 
-    const handleSearch = (value: string) => {
-        setFilters({ ...filters, search: value });
-    };
-
-    const handleDelete = async (id: string, e: React.MouseEvent) => {
+    const handleDelete = useCallback(async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
         try {
             await deleteConversation(id);
         } catch (error) {
             console.error('Failed to delete conversation:', error);
         }
-    };
+    }, [deleteConversation]);
 
-    const handleCreateNew = async () => {
+    const handleCreateNew = useCallback(async () => {
         try {
-            await createNewConversation();
+            // 清除当前对话状态
+            await clearCurrentConversation();
+            // 创建新对话
+            const newConversation = await createNewConversation();
+            // 导航到首页的聊天模式
+            navigate(`/?mode=chat&conversationId=${newConversation.id}`);
         } catch (error) {
             console.error('Failed to create new conversation:', error);
         }
-    };
+    }, [createNewConversation, clearCurrentConversation, navigate]);
+
+    const handleConversationClick = useCallback(async (item: ConversationListItem) => {
+        try {
+            // 加载对话数据
+            await loadConversation(item.id);
+            // 导航到首页的聊天模式，带上 conversationId 参数
+            navigate(`/?mode=chat&conversationId=${item.id}`);
+        } catch (error) {
+            console.error('Failed to load conversation:', error);
+        }
+    }, [loadConversation, navigate]);
 
     const formatDate = (date: Date) => {
         const now = new Date();
         const diff = now.getTime() - date.getTime();
         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        
+
         if (days === 0) return '今天';
         if (days === 1) return '昨天';
         if (days < 7) return `${days}天前`;
@@ -71,11 +84,12 @@ export const ConversationHistory: React.FC = () => {
                 border: '1px solid #f0f0f0',
                 transition: 'all 0.3s',
             }}
-            onClick={() => window.location.href = `/chat?conversationId=${item.id}`}
+            onClick={() => handleConversationClick(item)}
             actions={[
                 <Popconfirm
+                    key="delete"
                     title="确定要删除这个对话吗？"
-                    onConfirm={(e) => handleDelete(item.id, e as any)}
+                    onConfirm={(e) => handleDelete(item.id, e as React.MouseEvent)}
                     okText="确定"
                     cancelText="取消"
                 >
@@ -116,24 +130,22 @@ export const ConversationHistory: React.FC = () => {
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: 16, borderBottom: '1px solid #f0f0f0' }}>
-                <Space direction="vertical" style={{ width: '100%' }} size="middle">
-                    <Button
-                        type="primary"
-                        icon={<PlusOutlined />}
-                        onClick={handleCreateNew}
-                        block
-                    >
-                        新建对话
-                    </Button>
-                    <Search
-                        placeholder="搜索对话..."
-                        allowClear
-                        onSearch={handleSearch}
-                        onChange={(e) => handleSearch(e.target.value)}
-                        style={{ width: '100%' }}
-                        prefix={<SearchOutlined />}
-                    />
-                </Space>
+                <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={handleCreateNew}
+                    block
+                    size="large"
+                >
+                    新建对话
+                </Button>
+            </div>
+
+            {/* 搜索功能暂未完善提示 */}
+            <div style={{ padding: '8px 16px', background: '#fafafa' }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                    💡 搜索功能正在完善中，敬请期待
+                </Text>
             </div>
 
             <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
@@ -143,7 +155,7 @@ export const ConversationHistory: React.FC = () => {
                     </div>
                 ) : conversations.length === 0 ? (
                     <Empty
-                        description="暂无对话历史"
+                        description="暂无对话历史，点击上方按钮开始新对话"
                         image={Empty.PRESENTED_IMAGE_SIMPLE}
                     />
                 ) : (
