@@ -131,7 +131,7 @@ async def lifespan(app: FastAPI):
 
     logger.info("="*50)
     logger.info("所有服务初始化完成!")
-    logger.info(f"API文档地址: http://localhost:8000/docs")
+    logger.info(f"API文档地址: http://localhost:7860/docs")
     logger.info("="*50)
 
     yield
@@ -217,7 +217,8 @@ def create_app() -> FastAPI:
     frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
     if frontend_dist.exists():
         # 挂载静态资源目录（JS、CSS等）
-        app.mount("/assets", StaticFiles(directory=str(frontend_dist / "assets")), name="assets")
+        app.mount(
+            "/assets", StaticFiles(directory=str(frontend_dist / "assets")), name="assets")
         logger.info(f"前端静态文件已挂载: {frontend_dist}")
 
     # 全局异常处理
@@ -259,7 +260,8 @@ def create_app() -> FastAPI:
     @app.get("/", tags=["System"], include_in_schema=False)
     async def root():
         """根路由：如果有前端则返回前端页面，否则返回API信息"""
-        frontend_index = Path(__file__).parent.parent / "frontend" / "dist" / "index.html"
+        frontend_index = Path(__file__).parent.parent / \
+            "frontend" / "dist" / "index.html"
         if frontend_index.exists():
             from fastapi.responses import FileResponse
             return FileResponse(frontend_index)
@@ -308,7 +310,7 @@ def create_app() -> FastAPI:
     frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
     if frontend_dist.exists():
         from fastapi.responses import FileResponse
-        
+
         @app.get("/{full_path:path}", include_in_schema=False)
         async def serve_spa(full_path: str):
             """SPA Fallback: 所有未匹配的路由返回 index.html"""

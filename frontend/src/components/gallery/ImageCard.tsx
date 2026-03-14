@@ -29,7 +29,7 @@ export function ImageCard({ image, onClick, index = 0 }: ImageCardProps) {
         return () => observer.disconnect();
     }, []);
 
-    const imageUrl = image.preview_url || `http://localhost:8000/api/v1/storage/files/${image.metadata.file_path}`;
+    const imageUrl = image.preview_url || `/api/v1/storage/images/${image.id}`;
     const matchScore = Math.round(image.score * 100);
 
     return (
