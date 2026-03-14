@@ -1,3 +1,10 @@
+/**
+ * ConversationHistory - 重构版
+ * 
+ * 主要改进：
+ * 1. 简化点击加载流程，先导航再加载
+ * 2. 使用 URL 参数作为数据流驱动的入口
+ */
 import React, { useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { List, Button, Empty, Popconfirm, Tag, Space, Typography } from 'antd';
@@ -20,7 +27,6 @@ export const ConversationHistory: React.FC = () => {
         loadConversations,
         deleteConversation,
         createNewConversation,
-        loadConversation,
         clearCurrentConversation,
     } = useConversationStore();
 
@@ -50,16 +56,11 @@ export const ConversationHistory: React.FC = () => {
         }
     }, [createNewConversation, clearCurrentConversation, navigate]);
 
-    const handleConversationClick = useCallback(async (item: ConversationListItem) => {
-        try {
-            // 加载对话数据
-            await loadConversation(item.id);
-            // 导航到首页的聊天模式，带上 conversationId 参数
-            navigate(`/?mode=chat&conversationId=${item.id}`);
-        } catch (error) {
-            console.error('Failed to load conversation:', error);
-        }
-    }, [loadConversation, navigate]);
+    const handleConversationClick = useCallback((item: ConversationListItem) => {
+        // 简化流程：直接导航，让 ChatView 的 useEffect 处理加载
+        // 这样可以避免重复加载和竞态条件
+        navigate(`/?mode=chat&conversationId=${item.id}`);
+    }, [navigate]);
 
     const formatDate = (date: Date) => {
         const now = new Date();
@@ -139,13 +140,6 @@ export const ConversationHistory: React.FC = () => {
                 >
                     新建对话
                 </Button>
-            </div>
-
-            {/* 搜索功能暂未完善提示 */}
-            <div style={{ padding: '8px 16px', background: '#fafafa' }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                    💡 搜索功能正在完善中，敬请期待
-                </Text>
             </div>
 
             <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>

@@ -1,3 +1,11 @@
+/**
+ * ChatView - 重构版
+ * 
+ * 主要改进：
+ * 1. 统一从 conversationStore 获取消息，消除状态分裂
+ * 2. 优化对话加载逻辑，避免竞态条件
+ * 3. 修复消息保存逻辑，防止加载历史时触发错误保存
+ */
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
@@ -31,7 +39,6 @@ import type { ChatMessage } from '../../api/types';
 import { MarkdownRenderer } from '../common/MarkdownRenderer';
 import { VoiceInput } from '../common/VoiceInput';
 import { InputBubble } from '../chat/InputBubble';
-import { usePerformanceMonitor } from '../../hooks/usePerformanceMonitor';
 
 const { Content, Footer } = Layout;
 const { Text } = Typography;
@@ -39,74 +46,95 @@ const { TextArea } = Input;
 
 export const ChatView: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { messages, isLoading, sendMessage, clearHistory, setMessages } = useChatStore();
+
+  // chatStore - 仅用于 API 调用状态
+  const { isLoading, error, sendMessage, clearSession, setOnNewMessage } = useChatStore();
+
+  // conversationStore - 消息状态的唯一来源
   const {
     currentConversation,
     createNewConversation,
     loadConversation,
     addMessageToCurrent,
     clearCurrentConversation,
+    deleteConversation,
+    loadConversations,
   } = useConversationStore();
+
   const { lastSearchQuery, setLastSearchQuery } = useUnifiedStore();
+
   const [inputValue, setInputValue] = useState('');
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
-  const [pendingAgentMessage, setPendingAgentMessage] = useState<ChatMessage | null>(null);
-  const [processedMessageIds, setProcessedMessageIds] = useState<Set<string>>(new Set());
+
+  // 用于追踪正在加载的对话ID，防止重复加载
+  const loadingRef = useRef<string | null>(null);
+
+  // 用于追踪已处理的消息ID，防止重复保存
+  const processedMessageIdsRef = useRef<Set<string>>(new Set());
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  usePerformanceMonitor('ChatView');
+  // 从 conversationStore 获取消息（统一数据源）
+  const messages = currentConversation?.messages || [];
 
   // 从 URL 获取 conversationId
   const conversationId = searchParams.get('conversationId');
 
-  // 加载指定对话
+  // 设置消息回调 - 当 chatStore 收到新消息时保存到 conversationStore
   useEffect(() => {
-    if (conversationId && (!currentConversation || currentConversation.id !== conversationId)) {
-      setIsRestoring(true);
-      loadConversation(conversationId).catch(err => {
-        console.error('Failed to load conversation:', err);
-        setIsRestoring(false);
-      });
-    }
-  }, [conversationId, currentConversation, loadConversation]);
-
-  // 同步加载的对话到消息列表
-  useEffect(() => {
-    if (currentConversation && conversationId === currentConversation.id) {
-      setMessages(currentConversation.messages);
-      setIsRestoring(false);
-    }
-  }, [currentConversation, conversationId, setMessages]);
-
-  // 保存 agent 消息到 IndexedDB
-  useEffect(() => {
-    if (pendingAgentMessage) {
-      addMessageToCurrent(pendingAgentMessage).catch(err => {
-        console.error('Failed to save agent message to IndexedDB:', err);
-      });
-      setPendingAgentMessage(null);
-    }
-  }, [pendingAgentMessage, addMessageToCurrent]);
-
-  // 检测新的 agent 消息需要保存
-  useEffect(() => {
-    const lastMessage = messages[messages.length - 1];
-    if (pendingAgentMessage === null && lastMessage && lastMessage.type === 'agent') {
-      if (!processedMessageIds.has(lastMessage.id)) {
-        if (!currentConversation ||
-          !currentConversation.messages.some(msg => msg.id === lastMessage.id)) {
-          setPendingAgentMessage(lastMessage);
-          setProcessedMessageIds(prev => new Set([...prev, lastMessage.id]));
-        }
+    setOnNewMessage((message: ChatMessage) => {
+      if (currentConversation) {
+        addMessageToCurrent(message);
       }
-    }
-  }, [messages, pendingAgentMessage, currentConversation, processedMessageIds]);
+    });
+
+    return () => setOnNewMessage(null);
+  }, [currentConversation, addMessageToCurrent, setOnNewMessage]);
+
+  // 加载指定对话 - 优化后避免重复加载
+  useEffect(() => {
+    const loadConversationData = async () => {
+      // 如果没有 conversationId，清除当前对话
+      if (!conversationId) {
+        setIsRestoring(false);
+        loadingRef.current = null;
+        return;
+      }
+
+      // 如果正在加载同一个对话，跳过
+      if (loadingRef.current === conversationId) {
+        return;
+      }
+
+      // 如果已经加载了这个对话，跳过
+      if (currentConversation?.id === conversationId) {
+        setIsRestoring(false);
+        loadingRef.current = null;
+        return;
+      }
+
+      // 开始加载
+      loadingRef.current = conversationId;
+      setIsRestoring(true);
+
+      try {
+        await loadConversation(conversationId);
+      } catch (err) {
+        console.error('Failed to load conversation:', err);
+      } finally {
+        setIsRestoring(false);
+        loadingRef.current = null;
+      }
+    };
+
+    loadConversationData();
+  }, [conversationId, currentConversation?.id, loadConversation]);
 
   // 滚动到底部
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isLoading]);
+  }, [messages]);
 
   // 从首页带过来的搜索词
   useEffect(() => {
@@ -116,18 +144,21 @@ export const ChatView: React.FC = () => {
     }
   }, [lastSearchQuery, messages.length, setLastSearchQuery]);
 
+  // 发送消息
   const handleSend = useCallback(async () => {
-    if (!inputValue.trim() || isLoading || isRestoring) return;
+    if (!inputValue.trim() || isLoading) return;
+
     const query = inputValue.trim();
     setInputValue('');
 
+    // 确保有当前对话
     let conversation = currentConversation;
     if (!conversation) {
       conversation = await createNewConversation();
-      // 更新 URL 参数
       setSearchParams({ mode: 'chat', conversationId: conversation.id });
     }
 
+    // 构建用户消息
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
       type: 'user',
@@ -135,9 +166,23 @@ export const ChatView: React.FC = () => {
       timestamp: new Date(),
     };
 
+    // 先保存用户消息到 conversationStore
     await addMessageToCurrent(userMessage);
-    await sendMessage(query, userMessage);
-  }, [inputValue, isLoading, isRestoring, currentConversation, addMessageToCurrent, sendMessage, createNewConversation, setSearchParams]);
+
+    // 记录已处理的消息ID
+    processedMessageIdsRef.current.add(userMessage.id);
+
+    // 发送到后端（chatStore 会通过回调保存 agent 消息）
+    await sendMessage(query);
+  }, [
+    inputValue,
+    isLoading,
+    currentConversation,
+    createNewConversation,
+    addMessageToCurrent,
+    sendMessage,
+    setSearchParams
+  ]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -148,13 +193,21 @@ export const ChatView: React.FC = () => {
 
   // 新建对话
   const handleNewConversation = useCallback(async () => {
-    clearHistory();
+    clearSession();
     await clearCurrentConversation();
-    setMessages([]);
-    // 清除 URL 中的 conversationId
     setSearchParams({ mode: 'chat' });
-  }, [clearHistory, clearCurrentConversation, setMessages, setSearchParams]);
+  }, [clearSession, clearCurrentConversation, setSearchParams]);
 
+  // 删除当前对话
+  const handleDeleteConversation = useCallback(async () => {
+    if (currentConversation) {
+      await deleteConversation(currentConversation.id);
+      clearSession();
+      setSearchParams({ mode: 'chat' });
+    }
+  }, [currentConversation, deleteConversation, clearSession, setSearchParams]);
+
+  // 渲染消息
   const renderMessage = useCallback((msg: ChatMessage) => {
     const isUser = msg.type === 'user';
     const isSystem = msg.type === 'system';
@@ -219,7 +272,7 @@ export const ChatView: React.FC = () => {
                       {msg.images.map(img => (
                         <div key={img.id} style={{ width: 100, height: 100, borderRadius: 4, overflow: 'hidden', display: 'inline-block' }}>
                           <Image
-                            src={img.preview_url || img.metadata?.file_path}
+                            src={img.preview_url || `/api/v1/storage/images/${img.id}`}
                             width={100}
                             height={100}
                             style={{ objectFit: 'cover' }}
@@ -241,7 +294,9 @@ export const ChatView: React.FC = () => {
                       icon={<BulbOutlined />}
                       color="blue"
                       style={{ cursor: 'pointer', borderRadius: 12 }}
-                      onClick={() => sendMessage(s)}
+                      onClick={() => {
+                        setInputValue(s);
+                      }}
                     >
                       {s}
                     </Tag>
@@ -259,7 +314,7 @@ export const ChatView: React.FC = () => {
         </Space>
       </div>
     );
-  }, [sendMessage]);
+  }, []);
 
   return (
     <Layout style={{ height: '100%', background: 'transparent' }}>
@@ -287,13 +342,13 @@ export const ChatView: React.FC = () => {
               onClick={() => setShowHistoryModal(true)}
             />
           </Tooltip>
-          {messages.length > 0 && (
-            <Tooltip title="清空对话">
+          {currentConversation && messages.length > 0 && (
+            <Tooltip title="删除当前对话">
               <Button
                 type="text"
                 danger
                 icon={<DeleteOutlined />}
-                onClick={clearHistory}
+                onClick={handleDeleteConversation}
               />
             </Tooltip>
           )}
@@ -429,7 +484,7 @@ export const ChatView: React.FC = () => {
               <Space direction="vertical" size="small">
                 <Text strong>当前对话</Text>
                 <Text type="secondary">{currentConversation.title}</Text>
-                <Text type="secondary">{currentConversation.messages.length} 条消息</Text>
+                <Text type="secondary">{messages.length} 条消息</Text>
               </Space>
             </div>
           )}
@@ -438,10 +493,13 @@ export const ChatView: React.FC = () => {
           </div>
           <Button
             type="link"
-            onClick={() => setSearchParams({ mode: 'chat' })}
+            onClick={() => {
+              loadConversations();
+              setSearchParams({ mode: 'chat' });
+            }}
             style={{ marginTop: 8 }}
           >
-            查看完整历史
+            刷新历史列表
           </Button>
         </div>
       </Modal>
